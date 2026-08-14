@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { CaretDownIcon, CheckIcon, CrownIcon, DiceFiveIcon, GameControllerIcon, RocketLaunchIcon, SpinnerBallIcon, type Icon } from "@phosphor-icons/react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type View = "overview" | "users";
+type Vendor = "热游" | "灵仙";
 
 type GameRow = {
   game: string; region: string; active: number; plays: number; total: number;
@@ -23,11 +25,16 @@ const games: GameRow[] = [
   { game: "Crash", region: "印尼", active: 4500, plays: 28640, total: 994000, input: 782400, output: 741120, net: 41280, rate: 94.72, rank: "Top 6" },
 ];
 
-const gameCatalog: Record<string, { mark: string; color: string; id: string; vendor: string }> = {
-  "Lucky Wheel": { mark: "LW", color: "#409eff", id: "GAME-10001", vendor: "Hawk Games" },
-  Crash: { mark: "CR", color: "#7c3aed", id: "GAME-10002", vendor: "Hawk Games" },
-  "Slot King": { mark: "SK", color: "#f59e0b", id: "GAME-10003", vendor: "Hawk Games" },
-  Dice: { mark: "D6", color: "#16a34a", id: "GAME-10004", vendor: "Hawk Games" },
+const gameCatalog: Record<string, { icon: Icon; color: string; id: string; vendor: Vendor }> = {
+  "Lucky Wheel": { icon: SpinnerBallIcon, color: "#409eff", id: "GAME-10001", vendor: "热游" },
+  Crash: { icon: RocketLaunchIcon, color: "#7c3aed", id: "GAME-10002", vendor: "热游" },
+  "Slot King": { icon: CrownIcon, color: "#f59e0b", id: "GAME-10003", vendor: "灵仙" },
+  Dice: { icon: DiceFiveIcon, color: "#16a34a", id: "GAME-10004", vendor: "灵仙" },
+};
+
+const vendorGames: Record<Vendor, string[]> = {
+  热游: ["Lucky Wheel", "Crash"],
+  灵仙: ["Slot King", "Dice"],
 };
 
 const users: UserRow[] = [
@@ -78,18 +85,114 @@ function FilterField({ label, children, wide = false, error }: { label: string; 
   return <label className={`filter-field ${wide ? "wide" : ""} ${error ? "has-error" : ""}`}><span>{label}</span>{children}{error && <em>{error}</em>}</label>;
 }
 
+function GameSelector({ value, onChange }: { value: string; onChange: (next: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [vendor, setVendor] = useState<Vendor>(() => value !== "全部游戏" ? gameCatalog[value]?.vendor ?? "热游" : "热游");
+  const selectorRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const selectedMeta = value !== "全部游戏" ? gameCatalog[value] : undefined;
+
+  useEffect(() => {
+    if (!open) return;
+    function closeOnOutsideClick(event: MouseEvent) {
+      if (!selectorRef.current?.contains(event.target as Node)) setOpen(false);
+    }
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setOpen(false);
+        triggerRef.current?.focus();
+      }
+    }
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
+
+  function selectGame(next: string) {
+    onChange(next);
+    setOpen(false);
+    requestAnimationFrame(() => triggerRef.current?.focus());
+  }
+
+  const SelectedIcon = selectedMeta?.icon ?? GameControllerIcon;
+
+  return (
+    <div className="game-selector" ref={selectorRef}>
+      <button
+        ref={triggerRef}
+        type="button"
+        className={`game-selector-trigger ${open ? "open" : ""}`}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onClick={() => {
+          if (!open && selectedMeta) setVendor(selectedMeta.vendor);
+          setOpen((current) => !current);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowDown") {
+            event.preventDefault();
+            setOpen(true);
+          }
+        }}
+      >
+        <span className="game-selector-value">
+          <span className="game-selector-value-icon" style={selectedMeta ? { color: selectedMeta.color, background: `${selectedMeta.color}18` } : undefined}>
+            <SelectedIcon size={17} weight="duotone" aria-hidden="true" />
+          </span>
+          <span>{value}</span>
+        </span>
+        <CaretDownIcon size={15} weight="bold" className="game-selector-caret" aria-hidden="true" />
+      </button>
+
+      {open && (
+        <section className="game-selector-panel" role="dialog" aria-label="选择游戏">
+          <div className="game-selector-panel-head">
+            <div><strong>选择游戏</strong><span>先选择厂商，再单选游戏</span></div>
+            {value !== "全部游戏" && <button type="button" onClick={() => selectGame("全部游戏")}>清除选择</button>}
+          </div>
+
+          <div className="vendor-switch" role="group" aria-label="游戏厂商">
+            {(Object.keys(vendorGames) as Vendor[]).map((item) => (
+              <button key={item} type="button" className={vendor === item ? "active" : ""} aria-pressed={vendor === item} onClick={() => setVendor(item)}>{item}</button>
+            ))}
+          </div>
+
+          <div className="vendor-game-list" role="radiogroup" aria-label={`${vendor}游戏列表`}>
+            {vendorGames[vendor].map((gameName) => {
+              const meta = gameCatalog[gameName];
+              const GameIcon = meta.icon;
+              const selected = value === gameName;
+              return (
+                <button key={gameName} type="button" role="radio" aria-checked={selected} className={selected ? "selected" : ""} onClick={() => selectGame(gameName)}>
+                  <span className="vendor-game-icon" style={{ color: meta.color, background: `${meta.color}18` }}><GameIcon size={20} weight="duotone" aria-hidden="true" /></span>
+                  <span><strong>{gameName}</strong><small>{meta.id}</small></span>
+                  <span className="game-radio" aria-hidden="true">{selected && <CheckIcon size={12} weight="bold" />}</span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
+
 function GameCell({ name }: { name: string }) {
-  const meta = gameCatalog[name] ?? { mark: "G", color: "#667085", id: "待确认", vendor: "待确认" };
+  const meta = gameCatalog[name] ?? { icon: GameControllerIcon, color: "#667085", id: "待确认", vendor: "热游" as Vendor };
+  const GameIcon = meta.icon;
 
   return (
     <div className="game-cell">
-      <span className="game-icon" style={{ color: meta.color, background: `${meta.color}18` }} aria-hidden="true">{meta.mark}</span>
+      <span className="game-icon" style={{ color: meta.color, background: `${meta.color}18` }} aria-hidden="true"><GameIcon size={16} weight="duotone" /></span>
       <b>{name}</b>
       <span className="game-info-wrap">
         <button type="button" className="game-info-button" aria-label={`查看 ${name} 游戏信息`}>?</button>
         <span className="game-popover" role="tooltip">
           <span className="game-popover-head">
-            <span className="game-popover-icon" style={{ color: meta.color, background: `${meta.color}18` }} aria-hidden="true">{meta.mark}</span>
+            <span className="game-popover-icon" style={{ color: meta.color, background: `${meta.color}18` }} aria-hidden="true"><GameIcon size={22} weight="duotone" /></span>
             <span><small>游戏资料</small><strong>{name}</strong></span>
           </span>
           <span className="game-meta-row"><em>游戏 ID</em><b>{meta.id}</b></span>
@@ -227,7 +330,7 @@ export default function Home() {
             <>
               <section className="panel filter-panel overview-filters">
                 <FilterField label="区域"><select value={region} onChange={(event) => setRegion(event.target.value)}><option>全部区域</option><option>印尼</option><option>菲律宾</option><option>沙特</option><option>泰国</option></select></FilterField>
-                <FilterField label="游戏"><select value={game} onChange={(event) => setGame(event.target.value)}><option>全部游戏</option><option>Lucky Wheel</option><option>Crash</option><option>Slot King</option><option>Dice</option></select></FilterField>
+                <div className="filter-field game-filter-field"><span>游戏</span><GameSelector value={game} onChange={setGame} /></div>
                 <FilterField label="用户ID"><select value={userId} onChange={(event) => setUserId(event.target.value)}><option value="">全部用户</option>{users.slice(0, 5).map((row) => <option key={row.id} value={row.id}>{row.id} · {row.nickname}</option>)}</select></FilterField>
                 <FilterField label="统计日期" wide><input value="2026-07-01  -  2026-07-17" readOnly /></FilterField>
                 <div className="filter-actions"><button type="button" className="primary" onClick={() => simulateQuery()}>查询</button><button type="button" onClick={resetOverview}>重置</button><button type="button" className="success" onClick={() => setExportConfirm(true)}>导出报表</button></div>
