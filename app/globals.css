@@ -144,6 +144,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .metric-card div { min-width: 0; }
 .metric-card p { margin: -2px 0 4px; color: var(--muted); font-size: 12px; }
 .metric-card strong { display: block; overflow: hidden; font-size: clamp(17px, 1.3vw, 23px); line-height: 28px; text-overflow: ellipsis; white-space: nowrap; }
+.metric-card strong.metric-value-compact { overflow: visible; letter-spacing: -.25px; text-overflow: clip; font-variant-numeric: tabular-nums; }
 .metric-card small { display: block; overflow: hidden; margin-top: 4px; color: var(--subtle); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 
 .analytics-row { display: grid; grid-template-columns: minmax(600px, 1.65fr) minmax(390px, 1fr); gap: 16px; margin-top: 16px; }

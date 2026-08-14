@@ -117,9 +117,17 @@ const navItems = [
 
 const format = new Intl.NumberFormat("zh-CN");
 const money = (value: number) => `₵ ${format.format(value)}`;
+const compactMoneyFormat = new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 2, useGrouping: false });
+const compactMoney = (value: number) => {
+  const absoluteValue = Math.abs(value);
+  const sign = value < 0 ? "-" : "";
+  if (absoluteValue >= 100_000_000) return `₵ ${sign}${compactMoneyFormat.format(absoluteValue / 100_000_000)}亿`;
+  if (absoluteValue >= 10_000) return `₵ ${sign}${compactMoneyFormat.format(absoluteValue / 10_000)}万`;
+  return money(value);
+};
 
-function MetricCard({ mark, title, value, note, tone }: { mark: string; title: string; value: string; note: string; tone: string }) {
-  return <article className="metric-card"><span className={`metric-icon ${tone}`}>{mark}</span><div><p>{title}</p><strong>{value}</strong><small>{note}</small></div></article>;
+function MetricCard({ mark, title, value, note, tone, valueTitle, compact = false }: { mark: string; title: string; value: string; note: string; tone: string; valueTitle?: string; compact?: boolean }) {
+  return <article className="metric-card"><span className={`metric-icon ${tone}`}>{mark}</span><div><p>{title}</p><strong className={compact ? "metric-value-compact" : undefined} title={valueTitle}>{value}</strong><small>{note}</small></div></article>;
 }
 
 function FilterField({ label, children, wide = false, error }: { label: string; children: React.ReactNode; wide?: boolean; error?: string }) {
@@ -418,11 +426,11 @@ export default function Home() {
 
               <section className="overview-metrics">
                 <MetricCard mark="活" title="活跃游戏用户" value="86,420" note="较上周期 +12.6%" tone="blue" />
-                <MetricCard mark="游" title="游戏总流水" value="₵ 18,920,400" note="统计期内游戏累计流水" tone="violet" />
-                <MetricCard mark="投" title="用户投入" value="₵ 16,480,200" note="用户实际投入金额" tone="amber" />
-                <MetricCard mark="奖" title="用户出奖" value="₵ 14,998,360" note="游戏返奖/派奖金额" tone="red" />
+                <MetricCard mark="游" title="游戏总流水" value={compactMoney(18_920_400)} valueTitle={`完整金额：${money(18_920_400)}`} note="统计期内游戏累计流水" tone="violet" compact />
+                <MetricCard mark="投" title="用户投入" value={compactMoney(16_480_200)} valueTitle={`完整金额：${money(16_480_200)}`} note="用户实际投入金额" tone="amber" compact />
+                <MetricCard mark="奖" title="用户出奖" value={compactMoney(14_998_360)} valueTitle={`完整金额：${money(14_998_360)}`} note="游戏返奖/派奖金额" tone="red" compact />
                 <MetricCard mark="返" title="返奖率" value="91.01%" note="用户出奖 ÷ 用户投入 × 100%" tone="green" />
-                <MetricCard mark="净" title="净值" value="₵ 1,481,840" note="用户投入 - 用户出奖" tone="cyan" />
+                <MetricCard mark="净" title="净值" value={compactMoney(1_481_840)} valueTitle={`完整金额：${money(1_481_840)}`} note="用户投入 - 用户出奖" tone="cyan" compact />
               </section>
 
               <section className="analytics-row">
