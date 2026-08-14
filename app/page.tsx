@@ -116,17 +116,24 @@ const navItems = [
 ];
 
 const format = new Intl.NumberFormat("zh-CN");
-const money = (value: number) => `₵ ${format.format(value)}`;
+const moneyText = (value: number) => format.format(value);
 const compactMoneyFormat = new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 2, useGrouping: false });
-const compactMoney = (value: number) => {
+const compactMoneyText = (value: number) => {
   const absoluteValue = Math.abs(value);
   const sign = value < 0 ? "-" : "";
-  if (absoluteValue >= 100_000_000) return `₵ ${sign}${compactMoneyFormat.format(absoluteValue / 100_000_000)}亿`;
-  if (absoluteValue >= 10_000) return `₵ ${sign}${compactMoneyFormat.format(absoluteValue / 10_000)}万`;
-  return money(value);
+  if (absoluteValue >= 100_000_000) return `${sign}${compactMoneyFormat.format(absoluteValue / 100_000_000)}亿`;
+  if (absoluteValue >= 10_000) return `${sign}${compactMoneyFormat.format(absoluteValue / 10_000)}万`;
+  return moneyText(value);
 };
 
-function MetricCard({ mark, title, value, note, tone, valueTitle, compact = false }: { mark: string; title: string; value: string; note: string; tone: string; valueTitle?: string; compact?: boolean }) {
+function Money({ value, compact = false }: { value: number; compact?: boolean }) {
+  const amount = compact ? compactMoneyText(value) : moneyText(value);
+  return <span className="money-value" aria-label={`${amount} 金币`}><img src="/coin.png" alt="" aria-hidden="true" /><span>{amount}</span></span>;
+}
+
+const money = (value: number) => <Money value={value} />;
+
+function MetricCard({ mark, title, value, note, tone, valueTitle, compact = false }: { mark: string; title: string; value: React.ReactNode; note: string; tone: string; valueTitle?: string; compact?: boolean }) {
   return <article className="metric-card"><span className={`metric-icon ${tone}`}>{mark}</span><div className="metric-copy"><p>{title}</p><small>{note}</small></div><strong className={compact ? "metric-value-compact" : undefined} title={valueTitle}>{value}</strong></article>;
 }
 
@@ -500,11 +507,11 @@ export default function Home() {
 
               <section className="overview-metrics">
                 <MetricCard mark="活" title="活跃游戏用户" value="86,420" note="较上周期 +12.6%" tone="blue" />
-                <MetricCard mark="游" title="游戏总流水" value={compactMoney(18_920_400)} valueTitle={`完整金额：${money(18_920_400)}`} note="统计期内游戏累计流水" tone="violet" compact />
-                <MetricCard mark="投" title="用户投入" value={compactMoney(16_480_200)} valueTitle={`完整金额：${money(16_480_200)}`} note="用户实际投入金额" tone="amber" compact />
-                <MetricCard mark="奖" title="用户出奖" value={compactMoney(14_998_360)} valueTitle={`完整金额：${money(14_998_360)}`} note="游戏返奖/派奖金额" tone="red" compact />
+                <MetricCard mark="游" title="游戏总流水" value={<Money value={18_920_400} compact />} valueTitle={`完整金额：${moneyText(18_920_400)} 金币`} note="统计期内游戏累计流水" tone="violet" compact />
+                <MetricCard mark="投" title="用户投入" value={<Money value={16_480_200} compact />} valueTitle={`完整金额：${moneyText(16_480_200)} 金币`} note="用户实际投入金额" tone="amber" compact />
+                <MetricCard mark="奖" title="用户出奖" value={<Money value={14_998_360} compact />} valueTitle={`完整金额：${moneyText(14_998_360)} 金币`} note="游戏返奖/派奖金额" tone="red" compact />
                 <MetricCard mark="返" title="返奖率" value="91.01%" note="用户出奖 ÷ 用户投入 × 100%" tone="green" />
-                <MetricCard mark="净" title="净值" value={compactMoney(1_481_840)} valueTitle={`完整金额：${money(1_481_840)}`} note="用户投入 - 用户出奖" tone="cyan" compact />
+                <MetricCard mark="净" title="净值" value={<Money value={1_481_840} compact />} valueTitle={`完整金额：${moneyText(1_481_840)} 金币`} note="用户投入 - 用户出奖" tone="cyan" compact />
               </section>
 
               <section className="analytics-row">
@@ -526,7 +533,7 @@ export default function Home() {
                 <span className="query-hint">支持精确用户ID查询</span>
               </section>
 
-              <section className="user-metrics"><MetricCard mark="查" title="查询用户数" value={format.format(filteredUsers.length ? 86420 : 0)} note="当前筛选条件下用户数" tone="blue" /><MetricCard mark="高" title="高频游戏用户" value="12,680" note="近7日游戏 ≥ 35次" tone="violet" /><MetricCard mark="人" title="人均用户投入" value="₵ 190.70" note="总用户投入 ÷ 投入用户数" tone="amber" /><MetricCard mark="返" title="平均返奖率" value="89.64%" note="用户出奖 ÷ 用户投入" tone="green" /></section>
+              <section className="user-metrics"><MetricCard mark="查" title="查询用户数" value={format.format(filteredUsers.length ? 86420 : 0)} note="当前筛选条件下用户数" tone="blue" /><MetricCard mark="高" title="高频游戏用户" value="12,680" note="近7日游戏 ≥ 35次" tone="violet" /><MetricCard mark="人" title="人均用户投入" value={<Money value={190.70} />} note="总用户投入 ÷ 投入用户数" tone="amber" /><MetricCard mark="返" title="平均返奖率" value="89.64%" note="用户出奖 ÷ 用户投入" tone="green" /></section>
 
               <section className="panel table-panel user-table-panel"><div className="table-heading"><div><h2>游戏用户明细</h2><span>用于查询单个用户的游戏偏好、用户投入、用户出奖、返奖率与净值表现。</span></div><button type="button" className="table-tool" onClick={() => setExportConfirm(true)}>⇩ 导出当前结果</button></div><div className="table-wrap"><table><thead><tr><th>用户ID</th><th>昵称</th><th>区域</th><th>偏好游戏</th><th>活跃天数</th><th>游戏次数</th><th>用户投入</th><th>用户出奖</th><th>返奖率</th><th>净值</th><th>最近游戏时间</th><th>偏好排名</th></tr></thead><tbody>{loading ? <tr><td colSpan={12}><div className="loading-state"><span />正在加载用户数据…</div></td></tr> : visibleUsers.length ? visibleUsers.map((row) => <tr key={row.id}><td><b>{row.id}</b></td><td>{row.nickname}</td><td>{row.region}</td><td><button type="button" className="text-link" onClick={() => { setUserGame(row.game); notify(`已选择 ${row.game}`); }}>{row.game}</button></td><td>{row.days}天</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td className={row.rate >= 95 ? "rate-good" : ""}>{row.rate.toFixed(2)}%</td><td>{money(row.net)}</td><td>{row.latest}</td><td><span className={`rank-tag ${row.rank.replace(" ", "-").toLowerCase()}`}>{row.rank}</span></td></tr>) : <tr><td colSpan={12}><div className="empty-state"><b>未找到匹配用户</b><span>请检查用户 ID、区域或游戏条件。</span><button type="button" onClick={resetUsers}>清除筛选</button></div></td></tr>}</tbody></table></div><div className="table-footer"><span>净值 = 用户投入 - 用户出奖；返奖率 = 用户出奖 ÷ 用户投入 × 100%。</span><div className="pagination"><span>共 {format.format(filteredUsers.length)} 条 ｜ {pageSize} 条/页</span>{Array.from({ length: totalPages }, (_, index) => <button key={index + 1} type="button" className={page === index + 1 ? "active" : ""} onClick={() => setPage(index + 1)}>{index + 1}</button>)}</div></div></section>
             </>
