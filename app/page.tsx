@@ -235,80 +235,6 @@ function GameSelector({ value, onChange }: { value: string; onChange: (next: str
   );
 }
 
-function UserIdSelector({ value, onChange }: { value: string; onChange: (next: string) => void }) {
-  const [open, setOpen] = useState(false);
-  const selectorRef = useRef<HTMLDivElement | null>(null);
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const keyword = value.trim();
-  const matchingUsers = users.filter((row) => row.id.includes(keyword));
-
-  useEffect(() => {
-    if (!open) return;
-    function closeOnOutsideClick(event: MouseEvent) {
-      if (!selectorRef.current?.contains(event.target as Node)) setOpen(false);
-    }
-    function closeOnEscape(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setOpen(false);
-        inputRef.current?.focus();
-      }
-    }
-    document.addEventListener("mousedown", closeOnOutsideClick);
-    document.addEventListener("keydown", closeOnEscape);
-    return () => {
-      document.removeEventListener("mousedown", closeOnOutsideClick);
-      document.removeEventListener("keydown", closeOnEscape);
-    };
-  }, [open]);
-
-  function selectUser(next: string) {
-    onChange(next);
-    setOpen(false);
-    requestAnimationFrame(() => inputRef.current?.focus());
-  }
-
-  return (
-    <div className="user-id-selector" ref={selectorRef}>
-      <input
-        ref={inputRef}
-        value={value}
-        inputMode="numeric"
-        placeholder="搜索用户ID"
-        aria-label="搜索用户ID"
-        onFocus={() => setOpen(true)}
-        onChange={(event) => {
-          onChange(event.target.value);
-          setOpen(true);
-        }}
-        onKeyDown={(event) => {
-          if (event.key === "ArrowDown") {
-            event.preventDefault();
-            setOpen(true);
-          }
-          if (event.key === "Enter" && matchingUsers[0]) {
-            event.preventDefault();
-            selectUser(matchingUsers.find((row) => row.id === keyword)?.id ?? matchingUsers[0].id);
-          }
-        }}
-      />
-      {value && <button type="button" className="user-id-clear" aria-label="清空用户ID" onClick={() => { onChange(""); inputRef.current?.focus(); setOpen(true); }}><XIcon size={13} weight="bold" /></button>}
-      <CaretDownIcon size={15} weight="bold" className={`user-id-selector-caret ${open ? "open" : ""}`} aria-hidden="true" />
-
-      {open && (
-        <section className="user-id-panel" aria-label="用户ID搜索结果">
-          <button type="button" aria-pressed={!value} className={!value ? "selected" : ""} onClick={() => selectUser("")}><span>全部用户</span><small>不按用户筛选</small></button>
-          {matchingUsers.length ? matchingUsers.map((row) => (
-            <button key={row.id} type="button" aria-pressed={value === row.id} className={value === row.id ? "selected" : ""} onClick={() => selectUser(row.id)}>
-              <span><strong>{row.id}</strong><small>{row.nickname} · {row.region}</small></span>
-              {value === row.id && <CheckIcon size={14} weight="bold" aria-hidden="true" />}
-            </button>
-          )) : <div className="user-id-empty">未找到匹配的用户 ID</div>}
-        </section>
-      )}
-    </div>
-  );
-}
-
 function GameCell({ name }: { name: string }) {
   const meta = gameCatalog[name] ?? { icon: GameControllerIcon, color: "#667085", id: "待确认", vendor: "热游" as Vendor };
   const GameIcon = meta.icon;
@@ -387,7 +313,7 @@ export default function Home() {
     return games.filter((row) =>
       (region === "全部区域" || row.region === region) &&
       (game === "全部游戏" || row.game === game) &&
-      (!selectedUser || (row.region === selectedUser.region && row.game === selectedUser.game))
+      (!userId || (!!selectedUser && row.region === selectedUser.region && row.game === selectedUser.game))
     );
   }, [region, game, userId]);
 
@@ -497,7 +423,7 @@ export default function Home() {
               <section className="panel filter-panel overview-filters">
                 <FilterField label="区域"><select value={region} onChange={(event) => setRegion(event.target.value)}><option>全部区域</option>{regions.map((item) => <option key={item}>{item}</option>)}</select></FilterField>
                 <div className="filter-field game-filter-field"><span>游戏</span><GameSelector value={game} onChange={setGame} /></div>
-                <div className="filter-field user-id-filter-field"><span>用户ID</span><UserIdSelector value={userId} onChange={setUserId} /></div>
+                <FilterField label="用户ID"><input inputMode="numeric" placeholder="请输入完整用户ID" value={userId} onChange={(event) => setUserId(event.target.value.replace(/\D/g, ""))} onKeyDown={(event) => { if (event.key === "Enter") simulateQuery(); }} /></FilterField>
                 <FilterField label="统计日期" wide><input value="2026-07-01  -  2026-07-17" readOnly /></FilterField>
                 <div className="filter-actions"><button type="button" className="primary" onClick={() => simulateQuery()}>查询</button><button type="button" onClick={resetOverview}>重置</button><button type="button" className="success" onClick={() => setExportConfirm(true)}>导出报表</button></div>
                 <span className="update-time">数据更新时间：10:30</span>

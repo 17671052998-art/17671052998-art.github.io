@@ -95,7 +95,6 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .filter-field.has-error select { border-color: #ef4444; }
 .filter-field em { position: absolute; left: 0; top: 64px; color: #dc2626; font-size: 10px; font-style: normal; }
 .game-filter-field { min-width: 210px; z-index: 12; }
-.user-id-filter-field { min-width: 190px; z-index: 11; }
 .game-selector { position: relative; }
 .game-selector-trigger { width: 100%; height: 38px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 10px; border: 1px solid var(--line); border-radius: 5px; color: var(--text); background: white; font-size: 12px; outline: none; }
 .game-selector-trigger:hover { border-color: #b9c9dc; }
@@ -126,21 +125,6 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .vendor-game-list small { margin-top: 3px; color: var(--subtle); font-size: 9px; }
 .game-radio { width: 17px; height: 17px; display: grid; place-items: center; border: 1px solid #c8d2df; border-radius: 50%; color: white; background: white; }
 .vendor-game-list > button.selected .game-radio { border-color: var(--primary); background: var(--primary); }
-.user-id-selector { position: relative; }
-.user-id-selector input { padding-right: 48px; }
-.user-id-selector-caret { position: absolute; top: 12px; right: 11px; color: #667085; pointer-events: none; transition: transform .16s ease; }
-.user-id-selector-caret.open { transform: rotate(180deg); }
-.user-id-clear { width: 20px; height: 20px; position: absolute; z-index: 1; top: 9px; right: 29px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; color: #8b98aa; background: #eef2f6; }
-.user-id-clear:hover { color: #526176; background: #e2e8f0; }
-.user-id-panel { width: 280px; max-height: 280px; position: absolute; z-index: 80; left: 0; top: 46px; overflow-y: auto; padding: 6px; border: 1px solid #d8e0eb; border-radius: 9px; background: white; box-shadow: 0 18px 42px rgba(20,31,51,.18); }
-.user-id-panel > button { width: 100%; min-height: 42px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 9px; border: 1px solid transparent; border-radius: 6px; color: var(--text); background: white; text-align: left; }
-.user-id-panel > button:hover { background: #f6f9fd; }
-.user-id-panel > button:focus-visible { border-color: #8fc2fa; outline: none; box-shadow: 0 0 0 2px rgba(64,158,255,.09); }
-.user-id-panel > button.selected { border-color: #afd2fb; background: #f3f8ff; }
-.user-id-panel span, .user-id-panel strong, .user-id-panel small { display: block; }
-.user-id-panel strong { font-size: 12px; }
-.user-id-panel small { margin-top: 3px; color: var(--subtle); font-size: 10px; }
-.user-id-empty { padding: 18px 10px; color: var(--subtle); font-size: 11px; text-align: center; }
 .filter-actions { display: flex; gap: 10px; align-self: flex-end; padding-bottom: 0; }
 .filter-actions button, .confirm-modal button { height: 38px; padding: 0 18px; border: 1px solid var(--line); border-radius: 5px; background: white; font-size: 13px; }
 .filter-actions button.primary { border-color: var(--primary); color: white; background: var(--primary); font-weight: 700; }
