@@ -22,13 +22,15 @@ type GameUserRanking = {
   input: number; output: number; net: number; rate: number;
 };
 
+const regions = ["阿拉伯", "土耳其", "印度", "印尼", "巴基斯坦", "孟加拉", "菲律宾", "巴西", "其他"];
+
 const games: GameRow[] = [
   { game: "Lucky Wheel", region: "印尼", active: 28420, plays: 186230, total: 6420800, input: 5610200, output: 5091880, net: 518320, rate: 90.76, rank: "Top 1" },
   { game: "Crash", region: "菲律宾", active: 19860, plays: 142680, total: 4980600, input: 4382400, output: 4078920, net: 303480, rate: 93.08, rank: "Top 2" },
-  { game: "Slot King", region: "沙特", active: 15320, plays: 98410, total: 3840000, input: 3316200, output: 2968360, net: 347840, rate: 89.51, rank: "Top 3" },
-  { game: "Dice", region: "泰国", active: 11940, plays: 74260, total: 2420200, input: 2008800, output: 1859200, net: 149600, rate: 92.55, rank: "Top 4" },
-  { game: "Lucky Wheel", region: "菲律宾", active: 6380, plays: 41260, total: 1264800, input: 1084200, output: 1014240, net: 69960, rate: 93.55, rank: "Top 5" },
-  { game: "Crash", region: "印尼", active: 4500, plays: 28640, total: 994000, input: 782400, output: 741120, net: 41280, rate: 94.72, rank: "Top 6" },
+  { game: "Slot King", region: "阿拉伯", active: 15320, plays: 98410, total: 3840000, input: 3316200, output: 2968360, net: 347840, rate: 89.51, rank: "Top 3" },
+  { game: "Dice", region: "土耳其", active: 11940, plays: 74260, total: 2420200, input: 2008800, output: 1859200, net: 149600, rate: 92.55, rank: "Top 4" },
+  { game: "Lucky Wheel", region: "印度", active: 6380, plays: 41260, total: 1264800, input: 1084200, output: 1014240, net: 69960, rate: 93.55, rank: "Top 5" },
+  { game: "Crash", region: "巴基斯坦", active: 4500, plays: 28640, total: 994000, input: 782400, output: 741120, net: 41280, rate: 94.72, rank: "Top 6" },
 ];
 
 const gameCatalog: Record<string, { icon: Icon; color: string; id: string; vendor: Vendor }> = {
@@ -46,15 +48,15 @@ const vendorGames: Record<Vendor, string[]> = {
 const users: UserRow[] = [
   { id: "9382711", nickname: "Mia", region: "印尼", game: "Lucky Wheel", days: 14, plays: 386, input: 18620, output: 16880, net: 1740, rate: 90.66, latest: "2026-07-17 10:22", rank: "Top 1" },
   { id: "827160", nickname: "Leo", region: "菲律宾", game: "Crash", days: 12, plays: 322, input: 15480, output: 14930, net: 550, rate: 96.45, latest: "2026-07-17 10:18", rank: "Top 1" },
-  { id: "716049", nickname: "Sana", region: "沙特", game: "Slot King", days: 10, plays: 268, input: 12260, output: 10940, net: 1320, rate: 89.23, latest: "2026-07-17 09:58", rank: "Top 1" },
-  { id: "605938", nickname: "Nora", region: "泰国", game: "Dice", days: 9, plays: 224, input: 9860, output: 8760, net: 1100, rate: 88.84, latest: "2026-07-17 09:42", rank: "Top 1" },
-  { id: "594827", nickname: "Ava", region: "印尼", game: "Crash", days: 8, plays: 198, input: 8420, output: 8180, net: 240, rate: 97.15, latest: "2026-07-17 09:16", rank: "Top 2" },
-  { id: "483716", nickname: "Omar", region: "沙特", game: "Lucky Wheel", days: 7, plays: 176, input: 7880, output: 6920, net: 960, rate: 87.82, latest: "2026-07-17 08:55", rank: "Top 3" },
-  { id: "372605", nickname: "Lina", region: "菲律宾", game: "Slot King", days: 6, plays: 152, input: 6740, output: 5980, net: 760, rate: 88.72, latest: "2026-07-17 08:30", rank: "Top 3" },
-  { id: "261594", nickname: "Noah", region: "泰国", game: "Dice", days: 5, plays: 128, input: 5260, output: 4920, net: 340, rate: 93.54, latest: "2026-07-17 08:04", rank: "Top 3" },
-  { id: "150483", nickname: "Rani", region: "印尼", game: "Lucky Wheel", days: 5, plays: 118, input: 4920, output: 4610, net: 310, rate: 93.70, latest: "2026-07-16 23:41", rank: "Top 4" },
-  { id: "049372", nickname: "Tara", region: "泰国", game: "Crash", days: 4, plays: 96, input: 4380, output: 4060, net: 320, rate: 92.69, latest: "2026-07-16 22:26", rank: "Top 4" },
-  { id: "938150", nickname: "Fahd", region: "沙特", game: "Dice", days: 4, plays: 88, input: 3940, output: 3610, net: 330, rate: 91.62, latest: "2026-07-16 21:18", rank: "Top 5" },
+  { id: "716049", nickname: "Sana", region: "阿拉伯", game: "Slot King", days: 10, plays: 268, input: 12260, output: 10940, net: 1320, rate: 89.23, latest: "2026-07-17 09:58", rank: "Top 1" },
+  { id: "605938", nickname: "Nora", region: "土耳其", game: "Dice", days: 9, plays: 224, input: 9860, output: 8760, net: 1100, rate: 88.84, latest: "2026-07-17 09:42", rank: "Top 1" },
+  { id: "594827", nickname: "Ava", region: "印度", game: "Crash", days: 8, plays: 198, input: 8420, output: 8180, net: 240, rate: 97.15, latest: "2026-07-17 09:16", rank: "Top 2" },
+  { id: "483716", nickname: "Omar", region: "巴基斯坦", game: "Lucky Wheel", days: 7, plays: 176, input: 7880, output: 6920, net: 960, rate: 87.82, latest: "2026-07-17 08:55", rank: "Top 3" },
+  { id: "372605", nickname: "Lina", region: "孟加拉", game: "Slot King", days: 6, plays: 152, input: 6740, output: 5980, net: 760, rate: 88.72, latest: "2026-07-17 08:30", rank: "Top 3" },
+  { id: "261594", nickname: "Noah", region: "巴西", game: "Dice", days: 5, plays: 128, input: 5260, output: 4920, net: 340, rate: 93.54, latest: "2026-07-17 08:04", rank: "Top 3" },
+  { id: "150483", nickname: "Rani", region: "其他", game: "Lucky Wheel", days: 5, plays: 118, input: 4920, output: 4610, net: 310, rate: 93.70, latest: "2026-07-16 23:41", rank: "Top 4" },
+  { id: "049372", nickname: "Tara", region: "印尼", game: "Crash", days: 4, plays: 96, input: 4380, output: 4060, net: 320, rate: 92.69, latest: "2026-07-16 22:26", rank: "Top 4" },
+  { id: "938150", nickname: "Fahd", region: "阿拉伯", game: "Dice", days: 4, plays: 88, input: 3940, output: 3610, net: 330, rate: 91.62, latest: "2026-07-16 21:18", rank: "Top 5" },
   { id: "827049", nickname: "Jose", region: "菲律宾", game: "Lucky Wheel", days: 3, plays: 72, input: 3210, output: 3050, net: 160, rate: 95.02, latest: "2026-07-16 20:05", rank: "Top 5" },
 ];
 
@@ -104,8 +106,8 @@ function buildGameUserRankings(gameName: string, period: DetailPeriod): GameUser
 const rankData = [
   { region: "印尼", game: "Lucky Wheel", value: 32.8, color: "#409eff" },
   { region: "菲律宾", game: "Crash", value: 24.6, color: "#7c3aed" },
-  { region: "沙特", game: "Slot King", value: 19.3, color: "#f59e0b" },
-  { region: "泰国", game: "Dice", value: 14.7, color: "#16a34a" },
+  { region: "阿拉伯", game: "Slot King", value: 19.3, color: "#f59e0b" },
+  { region: "土耳其", game: "Dice", value: 14.7, color: "#16a34a" },
 ];
 
 const navItems = [
@@ -262,6 +264,7 @@ export default function Home() {
   const [exporting, setExporting] = useState(false);
   const [detailGame, setDetailGame] = useState<GameRow | null>(null);
   const [detailPeriod, setDetailPeriod] = useState<DetailPeriod>("day");
+  const [detailRegion, setDetailRegion] = useState("全部区域");
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const detailCloseRef = useRef<HTMLButtonElement | null>(null);
 
@@ -313,7 +316,7 @@ export default function Home() {
   const pageSize = 8;
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
   const visibleUsers = filteredUsers.slice((page - 1) * pageSize, page * pageSize);
-  const detailRankings = useMemo(() => detailGame ? buildGameUserRankings(detailGame.game, detailPeriod) : [], [detailGame, detailPeriod]);
+  const detailRankings = useMemo(() => detailGame ? buildGameUserRankings(detailGame.game, detailPeriod).filter((row) => detailRegion === "全部区域" || row.region === detailRegion) : [], [detailGame, detailPeriod, detailRegion]);
   const detailTotals = useMemo(() => {
     const totals = detailRankings.reduce((sum, row) => ({
       active: sum.active + row.active,
@@ -349,6 +352,7 @@ export default function Home() {
 
   function openGameDetails(gameRow: GameRow) {
     setDetailPeriod("day");
+    setDetailRegion("全部区域");
     setDetailGame(gameRow);
   }
 
@@ -404,7 +408,7 @@ export default function Home() {
           {view === "overview" ? (
             <>
               <section className="panel filter-panel overview-filters">
-                <FilterField label="区域"><select value={region} onChange={(event) => setRegion(event.target.value)}><option>全部区域</option><option>印尼</option><option>菲律宾</option><option>沙特</option><option>泰国</option></select></FilterField>
+                <FilterField label="区域"><select value={region} onChange={(event) => setRegion(event.target.value)}><option>全部区域</option>{regions.map((item) => <option key={item}>{item}</option>)}</select></FilterField>
                 <div className="filter-field game-filter-field"><span>游戏</span><GameSelector value={game} onChange={setGame} /></div>
                 <FilterField label="用户ID"><select value={userId} onChange={(event) => setUserId(event.target.value)}><option value="">全部用户</option>{users.slice(0, 5).map((row) => <option key={row.id} value={row.id}>{row.id} · {row.nickname}</option>)}</select></FilterField>
                 <FilterField label="统计日期" wide><input value="2026-07-01  -  2026-07-17" readOnly /></FilterField>
@@ -432,7 +436,7 @@ export default function Home() {
             <>
               <section className="panel filter-panel user-filters">
                 <FilterField label="用户ID"><input placeholder="请输入用户ID / 昵称" value={userKeyword} onChange={(event) => setUserKeyword(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") queryUsers(); }} /></FilterField>
-                <FilterField label="区域"><select value={userRegion} onChange={(event) => setUserRegion(event.target.value)}><option>全部区域</option><option>印尼</option><option>菲律宾</option><option>沙特</option><option>泰国</option></select></FilterField>
+                <FilterField label="区域"><select value={userRegion} onChange={(event) => setUserRegion(event.target.value)}><option>全部区域</option>{regions.map((item) => <option key={item}>{item}</option>)}</select></FilterField>
                 <FilterField label="游戏"><select value={userGame} onChange={(event) => setUserGame(event.target.value)}><option>全部游戏</option><option>Lucky Wheel</option><option>Crash</option><option>Slot King</option><option>Dice</option></select></FilterField>
                 <FilterField label="统计日期" wide><input value="2026-07-01  -  2026-07-17" readOnly /></FilterField>
                 <FilterField label="排序方式"><select value={sort} onChange={(event) => setSort(event.target.value)}><option>净值降序</option><option>游戏次数降序</option><option>最近游戏时间</option></select></FilterField>
@@ -455,14 +459,17 @@ export default function Home() {
             <header className="game-detail-head">
               <div className="game-detail-identity">
                 <span className="game-detail-avatar" style={{ color: detailGameMeta.color, background: `${detailGameMeta.color}18` }}><DetailGameIcon size={28} weight="duotone" aria-hidden="true" /></span>
-                <div><h2 id="game-detail-title">{detailGame.game} 用户游戏排行</h2><p>{detailGameMeta.id} · {detailGameMeta.vendor} · 全部区域</p></div>
+                <div><h2 id="game-detail-title">{detailGame.game} 用户游戏排行</h2><p>{detailGameMeta.id} · {detailGameMeta.vendor} · {detailRegion}</p></div>
               </div>
               <button ref={detailCloseRef} type="button" className="game-detail-close" aria-label="关闭游戏用户明细" onClick={() => setDetailGame(null)}><XIcon size={18} weight="bold" aria-hidden="true" /></button>
             </header>
 
             <div className="game-detail-toolbar">
-              <div className="detail-period-tabs" role="tablist" aria-label="统计维度">
-                {(Object.keys(detailPeriodConfig) as DetailPeriod[]).map((period) => <button key={period} type="button" role="tab" aria-selected={detailPeriod === period} className={detailPeriod === period ? "active" : ""} onClick={() => setDetailPeriod(period)}>{detailPeriodConfig[period].label}</button>)}
+              <div className="game-detail-controls">
+                <div className="detail-period-tabs" role="tablist" aria-label="统计维度">
+                  {(Object.keys(detailPeriodConfig) as DetailPeriod[]).map((period) => <button key={period} type="button" role="tab" aria-selected={detailPeriod === period} className={detailPeriod === period ? "active" : ""} onClick={() => setDetailPeriod(period)}>{detailPeriodConfig[period].label}</button>)}
+                </div>
+                <label className="game-detail-region-filter"><span>区域</span><select aria-label="区域筛选" value={detailRegion} onChange={(event) => setDetailRegion(event.target.value)}><option>全部区域</option>{regions.map((item) => <option key={item}>{item}</option>)}</select></label>
               </div>
               <div className="game-detail-scope" id="game-detail-scope"><span>统计范围：{activeDetailConfig.scope}</span><small>共 {detailRankings.length} 位用户 · 按用户投入降序</small></div>
             </div>
@@ -479,7 +486,7 @@ export default function Home() {
             <div className="game-detail-table-wrap">
               <table className="game-detail-table">
                 <thead><tr><th>用户信息</th><th>活跃用户人次</th><th>游戏下注次数</th><th>用户投入</th><th>用户出奖</th><th>净值</th><th>返奖率</th></tr></thead>
-                <tbody>{detailRankings.map((row, index) => <tr key={row.id}><td><div className="game-detail-user"><span className={`game-detail-rank rank-${index + 1}`}>{index + 1}</span><span className="game-detail-user-avatar">{row.nickname.slice(0, 1).toUpperCase()}</span><span className="game-detail-user-copy"><strong>{row.nickname}</strong><small>ID {row.id} · {row.region}</small></span></div></td><td>{format.format(row.active)}</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{money(row.net)}</td><td className={row.rate >= 95 ? "rate-good" : ""}>{row.rate.toFixed(2)}%</td></tr>)}</tbody>
+                <tbody>{detailRankings.length ? detailRankings.map((row, index) => <tr key={row.id}><td><div className="game-detail-user"><span className={`game-detail-rank rank-${index + 1}`}>{index + 1}</span><span className="game-detail-user-avatar">{row.nickname.slice(0, 1).toUpperCase()}</span><span className="game-detail-user-copy"><strong>{row.nickname}</strong><small>ID {row.id} · {row.region}</small></span></div></td><td>{format.format(row.active)}</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{money(row.net)}</td><td className={row.rate >= 95 ? "rate-good" : ""}>{row.rate.toFixed(2)}%</td></tr>) : <tr><td colSpan={7}><div className="game-detail-empty"><b>暂无用户数据</b><span>{detailGame.game} 在“{detailRegion}”暂无用户记录</span></div></td></tr>}</tbody>
               </table>
             </div>
 

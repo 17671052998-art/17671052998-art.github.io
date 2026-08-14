@@ -239,6 +239,10 @@ td b { color: var(--text); font-weight: 600; }
 .game-detail-close { width: 34px; height: 34px; display: grid; place-items: center; flex: 0 0 auto; padding: 0; border: 0; border-radius: 7px; color: var(--muted); background: #f4f6f9; }
 .game-detail-close:hover { color: var(--text); background: #e9edf3; }
 .game-detail-toolbar { min-height: 62px; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 12px 22px; }
+.game-detail-controls { display: flex; align-items: center; gap: 12px; }
+.game-detail-region-filter { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 10px; }
+.game-detail-region-filter select { width: 132px; height: 36px; padding: 0 28px 0 10px; border: 1px solid var(--line); border-radius: 6px; color: var(--text); background: white; font-size: 11px; outline: none; }
+.game-detail-region-filter select:focus-visible { border-color: #8fc2fa; box-shadow: 0 0 0 2px rgba(64,158,255,.09); }
 .game-detail-scope { text-align: right; }
 .game-detail-scope span, .game-detail-scope small { display: block; color: var(--subtle); font-size: 10px; white-space: nowrap; }
 .game-detail-scope small { margin-top: 4px; color: var(--muted); }
@@ -262,6 +266,8 @@ td b { color: var(--text); font-weight: 600; }
 .game-detail-user-copy strong, .game-detail-user-copy small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .game-detail-user-copy strong { color: var(--text); font-size: 11px; }
 .game-detail-user-copy small { margin-top: 2px; color: var(--subtle); font-size: 9px; }
+.game-detail-empty { min-height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
+.game-detail-empty b { color: var(--text); font-size: 13px; }.game-detail-empty span { color: var(--subtle); font-size: 10px; }
 .game-detail-footer { min-height: 62px; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 12px 22px; }
 .game-detail-footer span { color: var(--subtle); font-size: 10px; }
 .game-detail-footer button { height: 34px; min-width: 78px; padding: 0 18px; border: 1px solid var(--line); border-radius: 5px; color: var(--text); background: white; font-size: 11px; }
@@ -290,6 +296,7 @@ td b { color: var(--text); font-weight: 600; }
   .game-detail-modal { width: calc(100vw - 24px); max-height: calc(100vh - 24px); }
   .game-detail-head, .game-detail-toolbar, .game-detail-footer { padding-inline: 16px; }
   .game-detail-toolbar, .game-detail-footer { align-items: flex-start; flex-direction: column; }
+  .game-detail-controls { width: 100%; align-items: flex-start; flex-direction: column; }
   .game-detail-scope { text-align: left; }
   .game-detail-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); padding-inline: 16px; }
   .game-detail-table-wrap { margin-inline: 16px; }
