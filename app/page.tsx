@@ -17,9 +17,9 @@ type UserRow = {
   input: number; output: number; net: number; rate: number; latest: string; rank: string;
 };
 
-type GameDetailStat = {
-  period: string; active: number; plays: number; input: number;
-  output: number; net: number; rate: number;
+type GameUserRanking = {
+  id: string; nickname: string; region: string; active: number; plays: number;
+  input: number; output: number; net: number; rate: number;
 };
 
 const games: GameRow[] = [
@@ -75,43 +75,30 @@ const rateLinePoints = trend.map((item, index) => {
   return `${x},${y}`;
 }).join(" ");
 
-const detailPeriodConfig: Record<DetailPeriod, { label: string; scope: string; periods: string[]; weights: number[]; scale: number; userScale: number }> = {
-  day: {
-    label: "按日", scope: "2026-07-11 至 2026-07-17",
-    periods: ["07/11", "07/12", "07/13", "07/14", "07/15", "07/16", "07/17"],
-    weights: [0.11, 0.13, 0.12, 0.14, 0.15, 0.17, 0.18], scale: 0.46, userScale: 0.56,
-  },
-  week: {
-    label: "按周", scope: "2026-06-08 至 2026-07-19",
-    periods: ["06/08–06/14", "06/15–06/21", "06/22–06/28", "06/29–07/05", "07/06–07/12", "07/13–07/19"],
-    weights: [0.14, 0.15, 0.16, 0.17, 0.18, 0.20], scale: 1.82, userScale: 1.38,
-  },
-  month: {
-    label: "按月", scope: "2026-02 至 2026-07",
-    periods: ["2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07"],
-    weights: [0.13, 0.15, 0.16, 0.17, 0.18, 0.21], scale: 8.40, userScale: 3.75,
-  },
+const detailPeriodConfig: Record<DetailPeriod, { label: string; scope: string; scale: number; activeScale: number }> = {
+  day: { label: "按日", scope: "2026-07-17", scale: 0.12, activeScale: 0.32 },
+  week: { label: "按周", scope: "2026-07-13 至 2026-07-19", scale: 0.56, activeScale: 1.25 },
+  month: { label: "按月", scope: "2026-07-01 至 2026-07-31", scale: 1.75, activeScale: 3.20 },
 };
 
-const detailRateOffsets = [-0.82, 0.36, -0.58, 0.44, -0.18, 0.72, -0.24];
-
-function buildGameDetailStats(gameRow: GameRow, period: DetailPeriod): GameDetailStat[] {
+function buildGameUserRankings(gameName: string, period: DetailPeriod): GameUserRanking[] {
   const config = detailPeriodConfig[period];
-  return config.periods.map((label, index) => {
-    const weight = config.weights[index];
-    const input = Math.round(gameRow.input * config.scale * weight);
-    const rate = Math.max(0, Math.min(100, gameRow.rate + detailRateOffsets[index]));
+  return users.filter((user) => user.game === gameName).map((user) => {
+    const input = Math.max(1, Math.round(user.input * config.scale));
+    const rate = user.rate;
     const output = Math.round(input * rate / 100);
     return {
-      period: label,
-      active: Math.round(gameRow.active * config.userScale * weight),
-      plays: Math.round(gameRow.plays * config.scale * weight),
+      id: user.id,
+      nickname: user.nickname,
+      region: user.region,
+      active: Math.max(1, Math.round(user.days * config.activeScale + user.plays * config.scale / 70)),
+      plays: Math.max(1, Math.round(user.plays * config.scale)),
       input,
       output,
       net: input - output,
       rate,
     };
-  });
+  }).sort((a, b) => b.input - a.input);
 }
 
 const rankData = [
@@ -326,9 +313,9 @@ export default function Home() {
   const pageSize = 8;
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
   const visibleUsers = filteredUsers.slice((page - 1) * pageSize, page * pageSize);
-  const detailStats = useMemo(() => detailGame ? buildGameDetailStats(detailGame, detailPeriod) : [], [detailGame, detailPeriod]);
+  const detailRankings = useMemo(() => detailGame ? buildGameUserRankings(detailGame.game, detailPeriod) : [], [detailGame, detailPeriod]);
   const detailTotals = useMemo(() => {
-    const totals = detailStats.reduce((sum, row) => ({
+    const totals = detailRankings.reduce((sum, row) => ({
       active: sum.active + row.active,
       plays: sum.plays + row.plays,
       input: sum.input + row.input,
@@ -336,7 +323,7 @@ export default function Home() {
       net: sum.net + row.net,
     }), { active: 0, plays: 0, input: 0, output: 0, net: 0 });
     return { ...totals, rate: totals.input ? totals.output / totals.input * 100 : 0 };
-  }, [detailStats]);
+  }, [detailRankings]);
   const detailGameMeta = detailGame ? gameCatalog[detailGame.game] : undefined;
   const DetailGameIcon = detailGameMeta?.icon ?? GameControllerIcon;
   const activeDetailConfig = detailPeriodConfig[detailPeriod];
@@ -439,7 +426,7 @@ export default function Home() {
                 <article className="panel ranking-panel"><div className="panel-title"><h2>游戏区域统计</h2><span>按活跃用户 + 游戏次数综合排序</span></div><div className="rank-list">{rankData.map((item, index) => <div className="rank-row" key={item.region}><b className={index === 0 ? "first" : ""}>{index + 1}</b><strong>{item.region}</strong><span>{item.game}</span><div><i style={{ width: `${item.value / 35 * 100}%`, background: item.color }} /></div><em>{item.value}%</em></div>)}</div></article>
               </section>
 
-              <section className="panel table-panel"><div className="table-heading"><div><h2>游戏汇总数据</h2><span>悬浮问号查看游戏资料，点击“用户明细”查看该游戏的周期统计</span></div><button type="button" className="table-tool" onClick={() => setExportConfirm(true)}>⇩ 导出当前结果</button></div><div className="table-wrap game-table-wrap"><table><thead><tr><th>游戏</th><th>区域</th><th>活跃用户</th><th>游戏次数</th><th>游戏总流水</th><th>用户投入</th><th>用户出奖</th><th>返奖率</th><th>净值</th><th>热度</th><th>操作</th></tr></thead><tbody>{loading ? <tr><td colSpan={11}><div className="loading-state"><span />正在加载报表数据…</div></td></tr> : filteredGames.length ? filteredGames.slice(0, 4).map((row) => <tr key={`${row.region}-${row.game}`}><td><GameCell name={row.game} /></td><td>{row.region}</td><td>{format.format(row.active)}</td><td>{format.format(row.plays)}</td><td>{money(row.total)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{row.rate.toFixed(2)}%</td><td>{money(row.net)}</td><td>{row.rank}</td><td><button type="button" className="row-action" onClick={() => openGameDetails(row)}>用户明细</button></td></tr>) : <tr><td colSpan={11}><div className="empty-state"><b>未找到匹配数据</b><span>请调整区域、游戏或用户筛选条件后重试。</span><button type="button" onClick={resetOverview}>清除筛选</button></div></td></tr>}</tbody></table></div><div className="pagination"><span>共 {filteredGames.length} 条 ｜ 20 条/页</span><button className="active" type="button">1</button><button type="button" disabled>2</button></div></section>
+              <section className="panel table-panel"><div className="table-heading"><div><h2>游戏汇总数据</h2><span>悬浮问号查看游戏资料，点击“用户明细”查看该游戏的用户排行</span></div><button type="button" className="table-tool" onClick={() => setExportConfirm(true)}>⇩ 导出当前结果</button></div><div className="table-wrap game-table-wrap"><table><thead><tr><th>游戏</th><th>区域</th><th>活跃用户</th><th>游戏次数</th><th>游戏总流水</th><th>用户投入</th><th>用户出奖</th><th>返奖率</th><th>净值</th><th>热度</th><th>操作</th></tr></thead><tbody>{loading ? <tr><td colSpan={11}><div className="loading-state"><span />正在加载报表数据…</div></td></tr> : filteredGames.length ? filteredGames.slice(0, 4).map((row) => <tr key={`${row.region}-${row.game}`}><td><GameCell name={row.game} /></td><td>{row.region}</td><td>{format.format(row.active)}</td><td>{format.format(row.plays)}</td><td>{money(row.total)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{row.rate.toFixed(2)}%</td><td>{money(row.net)}</td><td>{row.rank}</td><td><button type="button" className="row-action" onClick={() => openGameDetails(row)}>用户明细</button></td></tr>) : <tr><td colSpan={11}><div className="empty-state"><b>未找到匹配数据</b><span>请调整区域、游戏或用户筛选条件后重试。</span><button type="button" onClick={resetOverview}>清除筛选</button></div></td></tr>}</tbody></table></div><div className="pagination"><span>共 {filteredGames.length} 条 ｜ 20 条/页</span><button className="active" type="button">1</button><button type="button" disabled>2</button></div></section>
             </>
           ) : (
             <>
@@ -468,7 +455,7 @@ export default function Home() {
             <header className="game-detail-head">
               <div className="game-detail-identity">
                 <span className="game-detail-avatar" style={{ color: detailGameMeta.color, background: `${detailGameMeta.color}18` }}><DetailGameIcon size={28} weight="duotone" aria-hidden="true" /></span>
-                <div><h2 id="game-detail-title">{detailGame.game} 用户游戏统计</h2><p>{detailGameMeta.id} · {detailGameMeta.vendor} · {detailGame.region}</p></div>
+                <div><h2 id="game-detail-title">{detailGame.game} 用户游戏排行</h2><p>{detailGameMeta.id} · {detailGameMeta.vendor} · 全部区域</p></div>
               </div>
               <button ref={detailCloseRef} type="button" className="game-detail-close" aria-label="关闭游戏用户明细" onClick={() => setDetailGame(null)}><XIcon size={18} weight="bold" aria-hidden="true" /></button>
             </header>
@@ -477,22 +464,22 @@ export default function Home() {
               <div className="detail-period-tabs" role="tablist" aria-label="统计维度">
                 {(Object.keys(detailPeriodConfig) as DetailPeriod[]).map((period) => <button key={period} type="button" role="tab" aria-selected={detailPeriod === period} className={detailPeriod === period ? "active" : ""} onClick={() => setDetailPeriod(period)}>{detailPeriodConfig[period].label}</button>)}
               </div>
-              <span id="game-detail-scope">统计范围：{activeDetailConfig.scope}</span>
+              <div className="game-detail-scope" id="game-detail-scope"><span>统计范围：{activeDetailConfig.scope}</span><small>共 {detailRankings.length} 位用户 · 按用户投入降序</small></div>
             </div>
 
             <div className="game-detail-metrics">
               <div><span>活跃用户人次</span><strong>{format.format(detailTotals.active)}</strong></div>
-              <div><span>游戏次数</span><strong>{format.format(detailTotals.plays)}</strong></div>
+              <div><span>游戏下注次数</span><strong>{format.format(detailTotals.plays)}</strong></div>
               <div><span>用户投入</span><strong>{money(detailTotals.input)}</strong></div>
               <div><span>用户出奖</span><strong>{money(detailTotals.output)}</strong></div>
-              <div><span>返奖率</span><strong>{detailTotals.rate.toFixed(2)}%</strong></div>
               <div><span>净值</span><strong>{money(detailTotals.net)}</strong></div>
+              <div><span>返奖率</span><strong>{detailTotals.rate.toFixed(2)}%</strong></div>
             </div>
 
             <div className="game-detail-table-wrap">
               <table className="game-detail-table">
-                <thead><tr><th>统计周期</th><th>活跃用户人次</th><th>游戏次数</th><th>用户投入</th><th>用户出奖</th><th>返奖率</th><th>净值</th></tr></thead>
-                <tbody>{detailStats.map((row) => <tr key={row.period}><td><b>{row.period}</b></td><td>{format.format(row.active)}</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td className={row.rate >= 95 ? "rate-good" : ""}>{row.rate.toFixed(2)}%</td><td>{money(row.net)}</td></tr>)}</tbody>
+                <thead><tr><th>用户信息</th><th>活跃用户人次</th><th>游戏下注次数</th><th>用户投入</th><th>用户出奖</th><th>净值</th><th>返奖率</th></tr></thead>
+                <tbody>{detailRankings.map((row, index) => <tr key={row.id}><td><div className="game-detail-user"><span className={`game-detail-rank rank-${index + 1}`}>{index + 1}</span><span className="game-detail-user-avatar">{row.nickname.slice(0, 1).toUpperCase()}</span><span className="game-detail-user-copy"><strong>{row.nickname}</strong><small>ID {row.id} · {row.region}</small></span></div></td><td>{format.format(row.active)}</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{money(row.net)}</td><td className={row.rate >= 95 ? "rate-good" : ""}>{row.rate.toFixed(2)}%</td></tr>)}</tbody>
               </table>
             </div>
 

@@ -239,7 +239,9 @@ td b { color: var(--text); font-weight: 600; }
 .game-detail-close { width: 34px; height: 34px; display: grid; place-items: center; flex: 0 0 auto; padding: 0; border: 0; border-radius: 7px; color: var(--muted); background: #f4f6f9; }
 .game-detail-close:hover { color: var(--text); background: #e9edf3; }
 .game-detail-toolbar { min-height: 62px; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 12px 22px; }
-.game-detail-toolbar > span { color: var(--subtle); font-size: 11px; white-space: nowrap; }
+.game-detail-scope { text-align: right; }
+.game-detail-scope span, .game-detail-scope small { display: block; color: var(--subtle); font-size: 10px; white-space: nowrap; }
+.game-detail-scope small { margin-top: 4px; color: var(--muted); }
 .detail-period-tabs { display: grid; grid-template-columns: repeat(3, 76px); gap: 4px; padding: 3px; border-radius: 7px; background: #f1f4f8; }
 .detail-period-tabs button { height: 30px; border: 0; border-radius: 5px; color: var(--muted); background: transparent; font-size: 11px; }
 .detail-period-tabs button.active { color: var(--primary-dark); background: white; box-shadow: 0 1px 4px rgba(20,31,51,.1); font-weight: 700; }
@@ -249,9 +251,17 @@ td b { color: var(--text); font-weight: 600; }
 .game-detail-metrics span { color: var(--subtle); font-size: 10px; }
 .game-detail-metrics strong { margin-top: 5px; color: var(--text); font-size: 15px; line-height: 22px; }
 .game-detail-table-wrap { min-height: 0; margin: 0 22px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; }
-.game-detail-table { min-width: 780px; }
+.game-detail-table { min-width: 900px; }
 .game-detail-table th { position: sticky; z-index: 1; top: 0; }
-.game-detail-table td { height: 42px; }
+.game-detail-table td { height: 52px; }
+.game-detail-user { min-width: 205px; display: flex; align-items: center; gap: 9px; }
+.game-detail-rank { width: 20px; flex: 0 0 auto; color: var(--subtle); text-align: center; font-size: 11px; font-weight: 700; }
+.game-detail-rank.rank-1 { color: #d18b00; }.game-detail-rank.rank-2 { color: #667085; }.game-detail-rank.rank-3 { color: #b06b36; }
+.game-detail-user-avatar { width: 30px; height: 30px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 50%; color: #2563eb; background: #eaf3ff; font-size: 11px; font-weight: 800; }
+.game-detail-user-copy { min-width: 0; }
+.game-detail-user-copy strong, .game-detail-user-copy small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.game-detail-user-copy strong { color: var(--text); font-size: 11px; }
+.game-detail-user-copy small { margin-top: 2px; color: var(--subtle); font-size: 9px; }
 .game-detail-footer { min-height: 62px; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 12px 22px; }
 .game-detail-footer span { color: var(--subtle); font-size: 10px; }
 .game-detail-footer button { height: 34px; min-width: 78px; padding: 0 18px; border: 1px solid var(--line); border-radius: 5px; color: var(--text); background: white; font-size: 11px; }
@@ -280,6 +290,7 @@ td b { color: var(--text); font-weight: 600; }
   .game-detail-modal { width: calc(100vw - 24px); max-height: calc(100vh - 24px); }
   .game-detail-head, .game-detail-toolbar, .game-detail-footer { padding-inline: 16px; }
   .game-detail-toolbar, .game-detail-footer { align-items: flex-start; flex-direction: column; }
+  .game-detail-scope { text-align: left; }
   .game-detail-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); padding-inline: 16px; }
   .game-detail-table-wrap { margin-inline: 16px; }
 }
