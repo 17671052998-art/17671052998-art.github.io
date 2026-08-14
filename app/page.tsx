@@ -127,7 +127,7 @@ const compactMoney = (value: number) => {
 };
 
 function MetricCard({ mark, title, value, note, tone, valueTitle, compact = false }: { mark: string; title: string; value: string; note: string; tone: string; valueTitle?: string; compact?: boolean }) {
-  return <article className="metric-card"><span className={`metric-icon ${tone}`}>{mark}</span><div><p>{title}</p><strong className={compact ? "metric-value-compact" : undefined} title={valueTitle}>{value}</strong><small>{note}</small></div></article>;
+  return <article className="metric-card"><span className={`metric-icon ${tone}`}>{mark}</span><div className="metric-copy"><p>{title}</p><small>{note}</small></div><strong className={compact ? "metric-value-compact" : undefined} title={valueTitle}>{value}</strong></article>;
 }
 
 function FilterField({ label, children, wide = false, error }: { label: string; children: React.ReactNode; wide?: boolean; error?: string }) {
