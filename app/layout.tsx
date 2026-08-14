@@ -2,8 +2,20 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "我的游戏战绩 · Hawk Play",
-  description: "查看个人游戏次数、投入、奖励、返还率与常玩游戏排行。",
+  metadataBase: new URL("https://hawk-play-stats-20260814.classy-star-8757.chatgpt.site"),
+  title: "游戏数据报表 · Hawk Admin",
+  description: "按区域、游戏或用户维度查询投入、支出、返缴率与受欢迎程度。",
+  openGraph: {
+    title: "游戏数据报表 · Hawk Admin",
+    description: "按区域、游戏或用户维度查询投入、支出、返缴率与受欢迎程度。",
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Hawk Admin 游戏数据报表" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "游戏数据报表 · Hawk Admin",
+    description: "按区域、游戏或用户维度查询投入、支出、返缴率与受欢迎程度。",
+    images: ["/og.png"],
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

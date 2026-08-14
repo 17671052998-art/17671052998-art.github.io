@@ -2,244 +2,251 @@
 
 import { useMemo, useRef, useState } from "react";
 
-type PeriodKey = "7" | "30" | "90";
-type TrendMode = "flow" | "rate";
+type View = "overview" | "users";
+type Scope = "region" | "user";
 
-const periodData = {
-  "7": {
-    label: "近 7 天", plays: 284, input: 16480, reward: 14998, rate: 91.01, net: -1482,
-    days: ["08/08", "08/09", "08/10", "08/11", "08/12", "08/13", "今天"],
-    inputSeries: [1780, 2260, 1940, 2880, 2410, 2660, 2550],
-    rewardSeries: [1510, 2080, 1750, 2460, 2340, 2530, 2328],
-    rateSeries: [84.8, 92.0, 90.2, 85.4, 97.1, 95.1, 91.3],
-  },
-  "30": {
-    label: "近 30 天", plays: 1284, input: 72860, reward: 68420, rate: 93.91, net: -4440,
-    days: ["第1周", "第2周", "第3周", "第4周", "本周"],
-    inputSeries: [12820, 14460, 15840, 16920, 12820],
-    rewardSeries: [11680, 13220, 15110, 16480, 11930],
-    rateSeries: [91.1, 91.4, 95.4, 97.4, 93.1],
-  },
-  "90": {
-    label: "近 90 天", plays: 3682, input: 213420, reward: 202180, rate: 94.73, net: -11240,
-    days: ["6月", "7月", "8月"],
-    inputSeries: [68400, 72860, 72160], rewardSeries: [63760, 68420, 70000], rateSeries: [93.2, 93.9, 97.0],
-  },
-} satisfies Record<PeriodKey, {
-  label: string; plays: number; input: number; reward: number; rate: number; net: number;
-  days: string[]; inputSeries: number[]; rewardSeries: number[]; rateSeries: number[];
-}>;
+type GameRow = {
+  game: string; region: string; active: number; plays: number; total: number;
+  input: number; output: number; net: number; rate: number; rank: string;
+};
 
-const gameOptions = [
-  { id: "all", name: "全部游戏", ratio: 1, accent: "#5b7cfa", mark: "全", adjust: 0 },
-  { id: "wheel", name: "Lucky Wheel", ratio: 0.36, accent: "#7c5cff", mark: "LW", adjust: 1.4 },
-  { id: "crash", name: "Crash", ratio: 0.27, accent: "#3498f5", mark: "CR", adjust: -0.8 },
-  { id: "slot", name: "Slot King", ratio: 0.22, accent: "#f59e0b", mark: "SK", adjust: 0.6 },
-  { id: "dice", name: "Dice", ratio: 0.15, accent: "#15b77e", mark: "DI", adjust: -1.2 },
+type UserRow = {
+  id: string; nickname: string; region: string; game: string; days: number; plays: number;
+  input: number; output: number; net: number; rate: number; latest: string; rank: string;
+};
+
+const games: GameRow[] = [
+  { game: "Lucky Wheel", region: "印尼", active: 28420, plays: 186230, total: 6420800, input: 5610200, output: 5091880, net: 518320, rate: 90.76, rank: "Top 1" },
+  { game: "Crash", region: "菲律宾", active: 19860, plays: 142680, total: 4980600, input: 4382400, output: 4078920, net: 303480, rate: 93.08, rank: "Top 2" },
+  { game: "Slot King", region: "沙特", active: 15320, plays: 98410, total: 3840000, input: 3316200, output: 2968360, net: 347840, rate: 89.51, rank: "Top 3" },
+  { game: "Dice", region: "泰国", active: 11940, plays: 74260, total: 2420200, input: 2008800, output: 1859200, net: 149600, rate: 92.55, rank: "Top 4" },
+  { game: "Lucky Wheel", region: "菲律宾", active: 6380, plays: 41260, total: 1264800, input: 1084200, output: 1014240, net: 69960, rate: 93.55, rank: "Top 5" },
+  { game: "Crash", region: "印尼", active: 4500, plays: 28640, total: 994000, input: 782400, output: 741120, net: 41280, rate: 94.72, rank: "Top 6" },
 ];
 
-const gameRanking = [
-  { id: "wheel", name: "Lucky Wheel", rounds: 426, share: 36, reward: 2480, accent: "#7c5cff", mark: "LW", streak: "连续活跃 8 天" },
-  { id: "crash", name: "Crash", rounds: 318, share: 27, reward: -680, accent: "#3498f5", mark: "CR", streak: "本周玩过 24 局" },
-  { id: "slot", name: "Slot King", rounds: 264, share: 22, reward: 1260, accent: "#f59e0b", mark: "SK", streak: "最佳单局 +420 C" },
-  { id: "dice", name: "Dice", rounds: 176, share: 15, reward: 520, accent: "#15b77e", mark: "DI", streak: "最高连胜 5 局" },
+const users: UserRow[] = [
+  { id: "9382711", nickname: "Mia", region: "印尼", game: "Lucky Wheel", days: 14, plays: 386, input: 18620, output: 16880, net: 1740, rate: 90.66, latest: "2026-07-17 10:22", rank: "Top 1" },
+  { id: "827160", nickname: "Leo", region: "菲律宾", game: "Crash", days: 12, plays: 322, input: 15480, output: 14930, net: 550, rate: 96.45, latest: "2026-07-17 10:18", rank: "Top 1" },
+  { id: "716049", nickname: "Sana", region: "沙特", game: "Slot King", days: 10, plays: 268, input: 12260, output: 10940, net: 1320, rate: 89.23, latest: "2026-07-17 09:58", rank: "Top 1" },
+  { id: "605938", nickname: "Nora", region: "泰国", game: "Dice", days: 9, plays: 224, input: 9860, output: 8760, net: 1100, rate: 88.84, latest: "2026-07-17 09:42", rank: "Top 1" },
+  { id: "594827", nickname: "Ava", region: "印尼", game: "Crash", days: 8, plays: 198, input: 8420, output: 8180, net: 240, rate: 97.15, latest: "2026-07-17 09:16", rank: "Top 2" },
+  { id: "483716", nickname: "Omar", region: "沙特", game: "Lucky Wheel", days: 7, plays: 176, input: 7880, output: 6920, net: 960, rate: 87.82, latest: "2026-07-17 08:55", rank: "Top 3" },
+  { id: "372605", nickname: "Lina", region: "菲律宾", game: "Slot King", days: 6, plays: 152, input: 6740, output: 5980, net: 760, rate: 88.72, latest: "2026-07-17 08:30", rank: "Top 3" },
+  { id: "261594", nickname: "Noah", region: "泰国", game: "Dice", days: 5, plays: 128, input: 5260, output: 4920, net: 340, rate: 93.54, latest: "2026-07-17 08:04", rank: "Top 3" },
+  { id: "150483", nickname: "Rani", region: "印尼", game: "Lucky Wheel", days: 5, plays: 118, input: 4920, output: 4610, net: 310, rate: 93.70, latest: "2026-07-16 23:41", rank: "Top 4" },
+  { id: "049372", nickname: "Tara", region: "泰国", game: "Crash", days: 4, plays: 96, input: 4380, output: 4060, net: 320, rate: 92.69, latest: "2026-07-16 22:26", rank: "Top 4" },
+  { id: "938150", nickname: "Fahd", region: "沙特", game: "Dice", days: 4, plays: 88, input: 3940, output: 3610, net: 330, rate: 91.62, latest: "2026-07-16 21:18", rank: "Top 5" },
+  { id: "827049", nickname: "Jose", region: "菲律宾", game: "Lucky Wheel", days: 3, plays: 72, input: 3210, output: 3050, net: 160, rate: 95.02, latest: "2026-07-16 20:05", rank: "Top 5" },
 ];
 
-const compactNumber = new Intl.NumberFormat("zh-CN");
+const trend = [
+  { date: "07/11", input: 14.2, output: 12.8, rate: 90.1 },
+  { date: "07/12", input: 16.1, output: 14.5, rate: 90.8 },
+  { date: "07/13", input: 15.0, output: 13.4, rate: 89.7 },
+  { date: "07/14", input: 17.0, output: 15.6, rate: 91.4 },
+  { date: "07/15", input: 17.8, output: 16.2, rate: 91.1 },
+  { date: "07/16", input: 19.3, output: 17.4, rate: 91.8 },
+  { date: "07/17", input: 20.7, output: 18.9, rate: 91.3 },
+];
 
-function MetricCard({ mark, title, value, note, color }: {
-  mark: string; title: string; value: string; note: string; color: "blue" | "violet" | "amber" | "green";
-}) {
-  return (
-    <article className={`metric-card metric-${color}`}>
-      <span className="metric-mark" aria-hidden="true">{mark}</span>
-      <p>{title}</p><strong>{value}</strong><small>{note}</small>
-    </article>
-  );
+const rankData = [
+  { region: "印尼", game: "Lucky Wheel", value: 32.8, color: "#409eff" },
+  { region: "菲律宾", game: "Crash", value: 24.6, color: "#7c3aed" },
+  { region: "沙特", game: "Slot King", value: 19.3, color: "#f59e0b" },
+  { region: "泰国", game: "Dice", value: 14.7, color: "#16a34a" },
+];
+
+const navItems = [
+  ["⌂", "首页"], ["⚙", "系统管理"], ["◉", "用户管理"], ["◆", "充值管理"],
+  ["●", "运营管理"], ["▣", "房间管理"], ["◈", "游戏管理"], ["▤", "报表中心"],
+];
+
+const format = new Intl.NumberFormat("zh-CN");
+const money = (value: number) => `₵ ${format.format(value)}`;
+
+function MetricCard({ mark, title, value, note, tone }: { mark: string; title: string; value: string; note: string; tone: string }) {
+  return <article className="metric-card"><span className={`metric-icon ${tone}`}>{mark}</span><div><p>{title}</p><strong>{value}</strong><small>{note}</small></div></article>;
+}
+
+function FilterField({ label, children, wide = false, error }: { label: string; children: React.ReactNode; wide?: boolean; error?: string }) {
+  return <label className={`filter-field ${wide ? "wide" : ""} ${error ? "has-error" : ""}`}><span>{label}</span>{children}{error && <em>{error}</em>}</label>;
 }
 
 export default function Home() {
-  const [period, setPeriod] = useState<PeriodKey>("30");
-  const [game, setGame] = useState("all");
-  const [draftPeriod, setDraftPeriod] = useState<PeriodKey>("30");
-  const [draftGame, setDraftGame] = useState("all");
-  const [trendMode, setTrendMode] = useState<TrendMode>("flow");
-  const [activePoint, setActivePoint] = useState(0);
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [detailGameId, setDetailGameId] = useState<string | null>(null);
-  const [activeNav, setActiveNav] = useState("data");
-  const [refreshing, setRefreshing] = useState(false);
+  const [view, setView] = useState<View>("overview");
+  const [scope, setScope] = useState<Scope>("region");
+  const [region, setRegion] = useState("全部区域");
+  const [game, setGame] = useState("全部游戏");
+  const [userId, setUserId] = useState("");
+  const [userRegion, setUserRegion] = useState("全部区域");
+  const [userGame, setUserGame] = useState("全部游戏");
+  const [userKeyword, setUserKeyword] = useState("");
+  const [sort, setSort] = useState("净值降序");
+  const [appliedUser, setAppliedUser] = useState({ keyword: "", region: "全部区域", game: "全部游戏", sort: "净值降序" });
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [adminMenu, setAdminMenu] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [toast, setToast] = useState("");
+  const [userError, setUserError] = useState("");
+  const [exportConfirm, setExportConfirm] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const selectedGame = gameOptions.find((item) => item.id === game) ?? gameOptions[0];
-  const baseData = periodData[period];
-  const detailGame = gameRanking.find((item) => item.id === detailGameId);
-  const data = useMemo(() => {
-    const ratio = selectedGame.ratio;
-    return {
-      plays: Math.round(baseData.plays * ratio), input: Math.round(baseData.input * ratio),
-      reward: Math.round(baseData.reward * ratio), net: Math.round(baseData.net * ratio),
-      rate: Math.max(0, baseData.rate + selectedGame.adjust),
-      inputSeries: baseData.inputSeries.map((item) => Math.round(item * ratio)),
-      rewardSeries: baseData.rewardSeries.map((item) => Math.round(item * ratio)),
-      rateSeries: baseData.rateSeries.map((item) => Math.max(0, item + selectedGame.adjust)),
-    };
-  }, [baseData, selectedGame]);
-  const maxFlow = Math.max(...data.inputSeries, ...data.rewardSeries);
-
-  function showToast(message: string) {
+  function notify(message: string) {
     setToast(message);
     if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(""), 2200);
+    toastTimer.current = setTimeout(() => setToast(""), 2600);
   }
-  function choosePeriod(next: PeriodKey) {
-    setPeriod(next); setDraftPeriod(next); setActivePoint(0); showToast(`已切换至${periodData[next].label}`);
+
+  function simulateQuery(message = "查询完成，数据已更新") {
+    if (scope === "user" && view === "overview" && !userId) {
+      setUserError("请选择要查询的用户 ID");
+      return;
+    }
+    setUserError("");
+    setLoading(true);
+    setTimeout(() => { setLoading(false); notify(message); }, 520);
   }
-  function openFilter() {
-    setDraftPeriod(period); setDraftGame(game); setFilterOpen(true);
+
+  const filteredGames = useMemo(() => games.filter((row) =>
+    (region === "全部区域" || row.region === region) && (game === "全部游戏" || row.game === game)
+  ), [region, game]);
+
+  const filteredUsers = useMemo(() => {
+    const keyword = appliedUser.keyword.trim().toLowerCase();
+    const rows = users.filter((row) =>
+      (!keyword || row.id.includes(keyword) || row.nickname.toLowerCase().includes(keyword)) &&
+      (appliedUser.region === "全部区域" || row.region === appliedUser.region) &&
+      (appliedUser.game === "全部游戏" || row.game === appliedUser.game)
+    );
+    return [...rows].sort((a, b) => appliedUser.sort === "游戏次数降序" ? b.plays - a.plays : appliedUser.sort === "最近游戏时间" ? b.latest.localeCompare(a.latest) : b.net - a.net);
+  }, [appliedUser]);
+
+  const pageSize = 8;
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
+  const visibleUsers = filteredUsers.slice((page - 1) * pageSize, page * pageSize);
+
+  function switchView(next: View) {
+    setView(next); setPage(1); setUserError("");
   }
-  function applyFilter() {
-    setPeriod(draftPeriod); setGame(draftGame); setActivePoint(0); setFilterOpen(false);
-    showToast(`已查看 ${gameOptions.find((item) => item.id === draftGame)?.name ?? "全部游戏"} · ${periodData[draftPeriod].label}`);
+
+  function queryUsers() {
+    setAppliedUser({ keyword: userKeyword, region: userRegion, game: userGame, sort });
+    setPage(1); setLoading(true);
+    setTimeout(() => { setLoading(false); notify("查询完成，已更新用户列表"); }, 520);
   }
-  function refreshData() {
-    if (refreshing) return;
-    setRefreshing(true);
-    setTimeout(() => { setRefreshing(false); showToast("数据已更新至刚刚"); }, 700);
+
+  function resetOverview() {
+    setScope("region"); setRegion("全部区域"); setGame("全部游戏"); setUserId(""); setUserError(""); notify("筛选条件已重置");
   }
-  function selectNav(id: string, label: string) {
-    setActiveNav(id); if (id !== "data") showToast(`${label}为交互演示入口`);
+
+  function resetUsers() {
+    setUserKeyword(""); setUserRegion("全部区域"); setUserGame("全部游戏"); setSort("净值降序");
+    setAppliedUser({ keyword: "", region: "全部区域", game: "全部游戏", sort: "净值降序" }); setPage(1); notify("筛选条件已重置");
+  }
+
+  function openGameUsers(gameName: string) {
+    setView("users"); setUserGame(gameName); setAppliedUser({ keyword: "", region: "全部区域", game: gameName, sort: "净值降序" }); setPage(1); notify(`已进入 ${gameName} 用户明细`);
+  }
+
+  function performExport() {
+    setExporting(true);
+    setTimeout(() => {
+      const rows = view === "overview" ? filteredGames : filteredUsers;
+      const header = view === "overview" ? ["游戏", "区域", "活跃用户", "游戏次数", "游戏总值", "投入", "支出", "净值", "返缴率", "热度"] : ["用户ID", "昵称", "区域", "偏好游戏", "活跃天数", "游戏次数", "投入", "支出", "净值", "返缴率", "最近游戏时间", "偏好排名"];
+      const body = rows.map((row) => Object.values(row).map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(","));
+      const blob = new Blob(["\ufeff" + [header.join(","), ...body].join("\n")], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = view === "overview" ? "游戏数据报表.csv" : "游戏用户列表.csv"; anchor.click(); URL.revokeObjectURL(url);
+      setExporting(false); setExportConfirm(false); notify(`已导出 ${rows.length} 条数据`);
+    }, 620);
+  }
+
+  async function toggleFullscreen() {
+    if (!document.fullscreenElement) await document.documentElement.requestFullscreen?.(); else await document.exitFullscreen?.();
   }
 
   return (
-    <main className="site-shell">
-      <div className="phone-page">
-        <header className="hero">
-          <div className="hero-orb hero-orb-one" /><div className="hero-orb hero-orb-two" />
-          <div className="topbar">
-            <div className="brand"><span>H</span> HAWK PLAY</div>
-            <button className="round-button" type="button" aria-label="查看消息" onClick={() => showToast("暂时没有新消息")}><span aria-hidden="true">●</span></button>
+    <main className={`admin-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}>
+      <aside className="sidebar">
+        <div className="brand-block"><strong>Hawk Admin</strong><span>管理后台</span></div>
+        <nav aria-label="后台主导航">
+          {navItems.map(([icon, label]) => (
+            <button key={label} type="button" className={label === "游戏管理" ? "active" : ""} onClick={() => label === "游戏管理" ? notify("当前位于游戏管理模块") : notify(`${label}为演示导航入口`)}><i>{icon}</i><span>{label}</span></button>
+          ))}
+          <div className="submenu"><span>游戏数据报表</span></div>
+        </nav>
+        <div className="sidebar-footer"><span className="status-dot" /> 系统运行正常</div>
+      </aside>
+
+      <div className="workspace">
+        <header className="top-header">
+          <div className="header-left"><button type="button" className="icon-button collapse-button" aria-label="折叠侧栏" onClick={() => setSidebarCollapsed((value) => !value)}>☰</button><span className="breadcrumb">首页 / 游戏管理 / <b>游戏数据报表</b></span></div>
+          <div className="header-actions">
+            <button type="button" className="icon-button" aria-label="全局搜索" onClick={() => setSearchOpen((value) => !value)}>⌕</button>
+            <button type="button" className="icon-button" aria-label="全屏" onClick={toggleFullscreen}>⛶</button>
+            <div className="admin-account"><button type="button" onClick={() => setAdminMenu((value) => !value)}><span className="admin-avatar">管</span>管理员 <i>⌄</i></button>{adminMenu && <div className="admin-menu"><button type="button" onClick={() => notify("个人资料为演示入口")}>个人资料</button><button type="button" onClick={() => notify("当前演示环境不支持退出")}>退出登录</button></div>}</div>
           </div>
-          <div className="welcome-row">
-            <div><p className="eyebrow">PLAYER CENTER</p><h1>我的游戏战绩</h1><p className="hero-copy">每一局都有回响，看看这段时间的表现。</p></div>
-            <div className="avatar" aria-label="用户头像">LU</div>
-          </div>
-          <section className="balance-card" aria-label="本期游戏数据摘要">
-            <div>
-              <p>{baseData.label}游戏币结余</p>
-              <strong className={data.net >= 0 ? "positive" : "negative"}>{data.net >= 0 ? "+" : "−"}{compactNumber.format(Math.abs(data.net))} <small>C</small></strong>
-              <span>投入与奖励的差额</span>
-            </div>
-            <button type="button" className={`refresh-button ${refreshing ? "is-refreshing" : ""}`} onClick={refreshData}><span aria-hidden="true">↻</span> {refreshing ? "更新中" : "刷新"}</button>
-          </section>
+          {searchOpen && <div className="global-search"><span>⌕</span><input autoFocus placeholder="搜索菜单或功能" onKeyDown={(event) => { if (event.key === "Enter") notify(`未找到“${event.currentTarget.value}”相关功能`); }} /><button type="button" onClick={() => setSearchOpen(false)}>×</button></div>}
         </header>
 
-        <section className="content">
-          <div className="period-toolbar" aria-label="时间范围">
-            <div className="period-tabs">
-              {(["7", "30", "90"] as PeriodKey[]).map((item) => (
-                <button key={item} type="button" className={period === item ? "active" : ""} aria-pressed={period === item} onClick={() => choosePeriod(item)}>{item}天</button>
-              ))}
-            </div>
-            <button type="button" className="filter-button" onClick={openFilter}><span aria-hidden="true">≡</span> 筛选</button>
-          </div>
-          {game !== "all" && (
-            <button className="selected-filter" type="button" onClick={openFilter}>
-              <span style={{ background: selectedGame.accent }}>{selectedGame.mark}</span>{selectedGame.name}<b aria-hidden="true">×</b>
-            </button>
+        <div className="page-tabs"><button type="button">home</button><button type="button" className="active"><span>●</span> 游戏数据报表 <i>×</i></button></div>
+
+        <section className="page-content">
+          <div className="page-title"><div><h1>游戏数据报表</h1><p>按区域、游戏或用户维度查询投入、支出、返缴率与受欢迎程度。</p></div><button type="button" className="refresh-link" onClick={() => simulateQuery("数据刷新完成")}>↻ 刷新数据</button></div>
+          <div className="business-tabs" role="tablist"><button role="tab" aria-selected={view === "overview"} className={view === "overview" ? "active" : ""} onClick={() => switchView("overview")}>总览报表</button><button role="tab" aria-selected={view === "users"} className={view === "users" ? "active" : ""} onClick={() => switchView("users")}>游戏用户列表</button></div>
+
+          {view === "overview" ? (
+            <>
+              <section className="panel filter-panel overview-filters">
+                <FilterField label="统计范围"><div className="scope-switch"><button type="button" className={scope === "region" ? "active" : ""} onClick={() => { setScope("region"); setUserError(""); }}>区域汇总</button><button type="button" className={scope === "user" ? "active" : ""} onClick={() => setScope("user")}>单用户</button></div></FilterField>
+                <FilterField label="区域"><select value={region} onChange={(event) => setRegion(event.target.value)}><option>全部区域</option><option>印尼</option><option>菲律宾</option><option>沙特</option><option>泰国</option></select></FilterField>
+                <FilterField label="游戏"><select value={game} onChange={(event) => setGame(event.target.value)}><option>全部游戏</option><option>Lucky Wheel</option><option>Crash</option><option>Slot King</option><option>Dice</option></select></FilterField>
+                <FilterField label="用户ID" error={userError}><select disabled={scope !== "user"} value={userId} onChange={(event) => { setUserId(event.target.value); setUserError(""); }}><option value="">{scope === "user" ? "请选择用户ID" : "选择单用户后启用"}</option>{users.slice(0, 5).map((row) => <option key={row.id} value={row.id}>{row.id} · {row.nickname}</option>)}</select></FilterField>
+                <FilterField label="统计日期" wide><input value="2026-07-01  -  2026-07-17" readOnly /></FilterField>
+                <div className="filter-actions"><button type="button" className="primary" onClick={() => simulateQuery()}>查询</button><button type="button" onClick={resetOverview}>重置</button><button type="button" className="success" onClick={() => setExportConfirm(true)}>导出报表</button></div>
+                <span className="update-time">数据更新时间：10:30</span>
+              </section>
+
+              <section className="overview-metrics">
+                <MetricCard mark="活" title="活跃游戏用户" value="86,420" note="较上周期 +12.6%" tone="blue" />
+                <MetricCard mark="游" title="游戏总值" value="₵ 18,920,400" note="统计期内总投注流水" tone="violet" />
+                <MetricCard mark="总" title="总投入" value="₵ 16,480,200" note="用户实际投入金额" tone="amber" />
+                <MetricCard mark="总" title="总支出" value="₵ 14,998,360" note="游戏返奖/派奖金额" tone="red" />
+                <MetricCard mark="平" title="平台净值" value="₵ 1,481,840" note="投入 - 支出" tone="green" />
+                <MetricCard mark="返" title="返缴率" value="91.01%" note="支出 ÷ 投入 × 100%" tone="cyan" />
+              </section>
+
+              <section className="analytics-row">
+                <article className="panel trend-panel"><div className="panel-title"><h2>投入 / 支出 / 返缴率趋势</h2><div className="chart-legend"><span><i className="blue" />投入</span><span><i className="orange" />支出</span><span><i className="green" />返缴率</span></div></div><div className="trend-chart"><div className="y-labels"><span>20M</span><span>15M</span><span>10M</span><span>5M</span><span>0</span></div><div className="chart-plot"><i className="grid g1" /><i className="grid g2" /><i className="grid g3" /><i className="grid g4" /><div className="bar-groups">{trend.map((item) => <div className="bar-group" key={item.date}><div className="bars"><button type="button" style={{ height: `${item.input / 22 * 100}%` }} className="bar input-bar" title={`${item.date} 投入 ${item.input}M`} /><button type="button" style={{ height: `${item.output / 22 * 100}%` }} className="bar output-bar" title={`${item.date} 支出 ${item.output}M`} /></div><span>{item.date}</span></div>)}</div><div className="line-layer">{trend.map((item, index) => <div className="line-cell" key={item.date}><button type="button" className="line-point" style={{ bottom: `${42 + (item.rate - 89) * 8}%` }} title={`${item.date} 返缴率 ${item.rate}%`}>{index < trend.length - 1 && <i style={{ transform: `rotate(${(trend[index + 1].rate - item.rate) * -4}deg)` }} />}</button></div>)}</div></div></div></article>
+                <article className="panel ranking-panel"><div className="panel-title"><h2>游戏区域统计</h2><span>按活跃用户 + 游戏次数综合排序</span></div><div className="rank-list">{rankData.map((item, index) => <div className="rank-row" key={item.region}><b className={index === 0 ? "first" : ""}>{index + 1}</b><strong>{item.region}</strong><span>{item.game}</span><div><i style={{ width: `${item.value / 35 * 100}%`, background: item.color }} /></div><em>{item.value}%</em></div>)}</div></article>
+              </section>
+
+              <section className="panel table-panel"><div className="table-heading"><div><h2>游戏汇总数据</h2><span>点击“用户明细”进入对应游戏的用户列表</span></div><button type="button" className="table-tool" onClick={() => setExportConfirm(true)}>⇩ 导出当前结果</button></div><div className="table-wrap"><table><thead><tr><th>游戏</th><th>区域</th><th>活跃用户</th><th>游戏次数</th><th>游戏总值</th><th>投入</th><th>支出</th><th>净值</th><th>返缴率</th><th>热度</th><th>操作</th></tr></thead><tbody>{loading ? <tr><td colSpan={11}><div className="loading-state"><span />正在加载报表数据…</div></td></tr> : filteredGames.length ? filteredGames.slice(0, 4).map((row) => <tr key={`${row.region}-${row.game}`}><td><b>{row.game}</b></td><td>{row.region}</td><td>{format.format(row.active)}</td><td>{format.format(row.plays)}</td><td>{money(row.total)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{money(row.net)}</td><td>{row.rate.toFixed(2)}%</td><td>{row.rank}</td><td><button type="button" className="row-action" onClick={() => openGameUsers(row.game)}>用户明细</button></td></tr>) : <tr><td colSpan={11}><div className="empty-state"><b>未找到匹配数据</b><span>请调整区域或游戏筛选条件后重试。</span><button type="button" onClick={resetOverview}>清除筛选</button></div></td></tr>}</tbody></table></div><div className="pagination"><span>共 {filteredGames.length} 条 ｜ 20 条/页</span><button className="active" type="button">1</button><button type="button" disabled>2</button></div></section>
+            </>
+          ) : (
+            <>
+              <section className="panel filter-panel user-filters">
+                <FilterField label="用户ID"><input placeholder="请输入用户ID / 昵称" value={userKeyword} onChange={(event) => setUserKeyword(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") queryUsers(); }} /></FilterField>
+                <FilterField label="区域"><select value={userRegion} onChange={(event) => setUserRegion(event.target.value)}><option>全部区域</option><option>印尼</option><option>菲律宾</option><option>沙特</option><option>泰国</option></select></FilterField>
+                <FilterField label="游戏"><select value={userGame} onChange={(event) => setUserGame(event.target.value)}><option>全部游戏</option><option>Lucky Wheel</option><option>Crash</option><option>Slot King</option><option>Dice</option></select></FilterField>
+                <FilterField label="统计日期" wide><input value="2026-07-01  -  2026-07-17" readOnly /></FilterField>
+                <FilterField label="排序方式"><select value={sort} onChange={(event) => setSort(event.target.value)}><option>净值降序</option><option>游戏次数降序</option><option>最近游戏时间</option></select></FilterField>
+                <div className="filter-actions"><button type="button" className="primary" onClick={queryUsers}>查询</button><button type="button" onClick={resetUsers}>重置</button><button type="button" className="success" onClick={() => setExportConfirm(true)}>导出用户表</button></div>
+                <span className="query-hint">支持精确用户ID查询</span>
+              </section>
+
+              <section className="user-metrics"><MetricCard mark="查" title="查询用户数" value={format.format(filteredUsers.length ? 86420 : 0)} note="当前筛选条件下用户数" tone="blue" /><MetricCard mark="高" title="高频游戏用户" value="12,680" note="近7日游戏 ≥ 35次" tone="violet" /><MetricCard mark="人" title="人均投入" value="₵ 190.70" note="总投入 ÷ 投入用户数" tone="amber" /><MetricCard mark="平" title="平均返缴率" value="89.64%" note="用户支出 ÷ 用户投入" tone="green" /></section>
+
+              <section className="panel table-panel user-table-panel"><div className="table-heading"><div><h2>游戏用户明细</h2><span>用于查询单个用户的游戏偏好、投入、支出、净值与返缴率表现。</span></div><button type="button" className="table-tool" onClick={() => setExportConfirm(true)}>⇩ 导出当前结果</button></div><div className="table-wrap"><table><thead><tr><th>用户ID</th><th>昵称</th><th>区域</th><th>偏好游戏</th><th>活跃天数</th><th>游戏次数</th><th>投入</th><th>支出</th><th>净值</th><th>返缴率</th><th>最近游戏时间</th><th>偏好排名</th></tr></thead><tbody>{loading ? <tr><td colSpan={12}><div className="loading-state"><span />正在加载用户数据…</div></td></tr> : visibleUsers.length ? visibleUsers.map((row) => <tr key={row.id}><td><b>{row.id}</b></td><td>{row.nickname}</td><td>{row.region}</td><td><button type="button" className="text-link" onClick={() => { setUserGame(row.game); notify(`已选择 ${row.game}`); }}>{row.game}</button></td><td>{row.days}天</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{money(row.net)}</td><td className={row.rate >= 95 ? "rate-good" : ""}>{row.rate.toFixed(2)}%</td><td>{row.latest}</td><td><span className={`rank-tag ${row.rank.replace(" ", "-").toLowerCase()}`}>{row.rank}</span></td></tr>) : <tr><td colSpan={12}><div className="empty-state"><b>未找到匹配用户</b><span>请检查用户 ID、区域或游戏条件。</span><button type="button" onClick={resetUsers}>清除筛选</button></div></td></tr>}</tbody></table></div><div className="table-footer"><span>净值 = 投入 - 支出；返缴率 = 支出 ÷ 投入 × 100%。</span><div className="pagination"><span>共 {format.format(filteredUsers.length)} 条 ｜ {pageSize} 条/页</span>{Array.from({ length: totalPages }, (_, index) => <button key={index + 1} type="button" className={page === index + 1 ? "active" : ""} onClick={() => setPage(index + 1)}>{index + 1}</button>)}</div></div></section>
+            </>
           )}
-          <section className="metrics-grid" aria-label="核心指标">
-            <MetricCard mark="局" title="游戏局数" value={compactNumber.format(data.plays)} note="完成的游戏局数" color="blue" />
-            <MetricCard mark="投" title="游戏投入" value={`${compactNumber.format(data.input)} C`} note="本期累计投入" color="violet" />
-            <MetricCard mark="奖" title="获得奖励" value={`${compactNumber.format(data.reward)} C`} note="已计入账户" color="amber" />
-            <MetricCard mark="率" title="返还率" value={`${data.rate.toFixed(2)}%`} note={`${data.rate >= 94 ? "高于" : "接近"}近30天平均`} color="green" />
-          </section>
-
-          <section className="card trend-card">
-            <div className="card-heading">
-              <div><p className="section-kicker">PERFORMANCE</p><h2>数据趋势</h2></div><span className="updated-time">更新于刚刚</span>
-            </div>
-            <div className="trend-tabs" role="tablist" aria-label="趋势类型">
-              <button type="button" role="tab" aria-selected={trendMode === "flow"} className={trendMode === "flow" ? "active" : ""} onClick={() => setTrendMode("flow")}>投入 / 奖励</button>
-              <button type="button" role="tab" aria-selected={trendMode === "rate"} className={trendMode === "rate" ? "active" : ""} onClick={() => setTrendMode("rate")}>返还率</button>
-            </div>
-            <div className="chart-summary">
-              <div><span>{trendMode === "flow" ? "当前选中" : "选中周期返还率"}</span><strong>{trendMode === "flow" ? `${compactNumber.format(data.rewardSeries[activePoint] ?? data.rewardSeries[0])} C` : `${(data.rateSeries[activePoint] ?? data.rateSeries[0]).toFixed(1)}%`}</strong></div>
-              <div className="legend" aria-label="图例">{trendMode === "flow" ? <><span><i className="legend-input" />投入</span><span><i className="legend-reward" />奖励</span></> : <span><i className="legend-rate" />返还率</span>}</div>
-            </div>
-            <div className={`chart ${trendMode === "rate" ? "rate-chart" : ""}`}>
-              <div className="grid-line grid-line-one" /><div className="grid-line grid-line-two" /><div className="grid-line grid-line-three" />
-              {baseData.days.map((day, index) => (
-                <button type="button" key={day} className={`chart-column ${activePoint === index ? "active" : ""}`} onClick={() => setActivePoint(index)} aria-label={`${day}，点击查看数据`}>
-                  <span className="bar-area">
-                    {trendMode === "flow" ? <><i className="flow-bar input-bar" style={{ height: `${Math.max(8, (data.inputSeries[index] / maxFlow) * 100)}%` }} /><i className="flow-bar reward-bar" style={{ height: `${Math.max(8, (data.rewardSeries[index] / maxFlow) * 100)}%` }} /></> : <i className="rate-bar" style={{ height: `${Math.max(18, (data.rateSeries[index] - 78) * 4.6)}%` }}><span>{data.rateSeries[index].toFixed(0)}</span></i>}
-                  </span><small>{day}</small>
-                </button>
-              ))}
-            </div>
-          </section>
-
-          <section className="insight-card">
-            <div className="insight-icon" aria-hidden="true">✦</div>
-            <div><p>本期小结</p><strong>{data.rate >= 94 ? "状态不错，返还表现高于近期平均" : "节奏平稳，试试你更擅长的游戏"}</strong></div>
-            <button type="button" aria-label="查看小结说明" onClick={() => showToast("小结根据游戏次数与返还率自动生成")}>›</button>
-          </section>
-
-          <section className="card ranking-card">
-            <div className="card-heading ranking-heading">
-              <div><p className="section-kicker">FAVORITES</p><h2>常玩游戏</h2></div>
-              <button type="button" onClick={openFilter}>全部游戏 <span aria-hidden="true">›</span></button>
-            </div>
-            <div className="game-list">
-              {gameRanking.map((item, index) => (
-                <button className="game-row" type="button" key={item.id} onClick={() => setDetailGameId(item.id)}>
-                  <span className={`rank-number rank-${index + 1}`}>{index + 1}</span>
-                  <span className="game-logo" style={{ background: `${item.accent}18`, color: item.accent }}>{item.mark}</span>
-                  <span className="game-main"><strong>{item.name}</strong><small>{Math.round(item.rounds * periodData[period].plays / 1284)} 局 · 占比 {item.share}%</small></span>
-                  <span className={item.reward >= 0 ? "game-result positive" : "game-result negative"}>{item.reward >= 0 ? "+" : "−"}{compactNumber.format(Math.abs(Math.round(item.reward * selectedGame.ratio)))} C<small>{item.streak}</small></span>
-                  <span className="row-arrow" aria-hidden="true">›</span>
-                </button>
-              ))}
-            </div>
-          </section>
         </section>
-
-        <nav className="bottom-nav" aria-label="主导航">
-          {[["home", "⌂", "首页"], ["games", "◇", "游戏"], ["data", "▥", "数据"], ["profile", "○", "我的"]].map(([id, icon, label]) => (
-            <button type="button" key={id} className={activeNav === id ? "active" : ""} aria-current={activeNav === id ? "page" : undefined} onClick={() => selectNav(id, label)}><span aria-hidden="true">{icon}</span>{label}</button>
-          ))}
-        </nav>
-
-        {filterOpen && (
-          <div className="sheet-layer">
-            <button className="sheet-backdrop" type="button" aria-label="关闭筛选" onClick={() => setFilterOpen(false)} />
-            <section className="bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="filter-title">
-              <div className="sheet-handle" />
-              <div className="sheet-heading"><div><p>FILTER</p><h2 id="filter-title">筛选数据</h2></div><button type="button" aria-label="关闭" onClick={() => setFilterOpen(false)}>×</button></div>
-              <fieldset><legend>统计周期</legend><div className="sheet-periods">{(["7", "30", "90"] as PeriodKey[]).map((item) => <button key={item} type="button" className={draftPeriod === item ? "active" : ""} onClick={() => setDraftPeriod(item)}>近 {item} 天</button>)}</div></fieldset>
-              <fieldset><legend>选择游戏</legend><div className="sheet-games">{gameOptions.map((item) => (
-                <button key={item.id} type="button" className={draftGame === item.id ? "active" : ""} onClick={() => setDraftGame(item.id)}><span style={{ background: `${item.accent}18`, color: item.accent }}>{item.mark}</span>{item.name}<i aria-hidden="true">{draftGame === item.id ? "✓" : ""}</i></button>
-              ))}</div></fieldset>
-              <button className="primary-action" type="button" onClick={applyFilter}>查看数据</button>
-            </section>
-          </div>
-        )}
-
-        {detailGame && (
-          <div className="sheet-layer">
-            <button className="sheet-backdrop" type="button" aria-label="关闭游戏详情" onClick={() => setDetailGameId(null)} />
-            <section className="bottom-sheet game-sheet" role="dialog" aria-modal="true" aria-labelledby="game-title">
-              <div className="sheet-handle" />
-              <div className="game-detail-head"><span className="game-detail-logo" style={{ background: `${detailGame.accent}18`, color: detailGame.accent }}>{detailGame.mark}</span><div><p>我的常玩游戏</p><h2 id="game-title">{detailGame.name}</h2></div><button type="button" aria-label="关闭" onClick={() => setDetailGameId(null)}>×</button></div>
-              <div className="detail-stats"><div><span>{baseData.label}局数</span><strong>{Math.round(detailGame.rounds * baseData.plays / 1284)}</strong></div><div><span>游戏占比</span><strong>{detailGame.share}%</strong></div><div><span>本期结余</span><strong className={detailGame.reward >= 0 ? "positive" : "negative"}>{detailGame.reward >= 0 ? "+" : "−"}{compactNumber.format(Math.abs(detailGame.reward))} C</strong></div></div>
-              <div className="detail-note"><span aria-hidden="true">✦</span><div><p>你的亮点</p><strong>{detailGame.streak}</strong></div></div>
-              <button className="primary-action" type="button" onClick={() => { setDetailGameId(null); showToast(`已打开 ${detailGame.name}（交互演示）`); }}>去玩一局</button>
-            </section>
-          </div>
-        )}
-        <div className={`toast ${toast ? "show" : ""}`} role="status" aria-live="polite">{toast}</div>
       </div>
+
+      {exportConfirm && <div className="modal-layer"><button className="modal-backdrop" type="button" aria-label="关闭导出确认" onClick={() => !exporting && setExportConfirm(false)} /><section className="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="export-title"><span className="confirm-icon">⇩</span><h2 id="export-title">确认导出数据？</h2><p>将按当前筛选条件导出 {view === "overview" ? filteredGames.length : filteredUsers.length} 条{view === "overview" ? "游戏汇总" : "用户明细"}数据，文件格式为 CSV。</p><div><button type="button" disabled={exporting} onClick={() => setExportConfirm(false)}>取消</button><button type="button" className="success" disabled={exporting} onClick={performExport}>{exporting ? "生成中…" : "确认导出"}</button></div></section></div>}
+      <div className={`toast ${toast ? "show" : ""}`} role="status" aria-live="polite"><span>✓</span>{toast}</div>
     </main>
   );
 }
