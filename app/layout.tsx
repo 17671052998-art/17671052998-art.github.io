@@ -4,16 +4,16 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL("https://17671052998-art.github.io"),
   title: "游戏数据报表 · Hawk Admin",
-  description: "按区域、游戏或用户维度查询投入、支出、返缴率与受欢迎程度。",
+  description: "按区域、游戏或用户维度查询用户投入、用户出奖、返奖率与净值。",
   openGraph: {
     title: "游戏数据报表 · Hawk Admin",
-    description: "按区域、游戏或用户维度查询投入、支出、返缴率与受欢迎程度。",
+    description: "按区域、游戏或用户维度查询用户投入、用户出奖、返奖率与净值。",
     images: [{ url: "/og.png", width: 1200, height: 630, alt: "Hawk Admin 游戏数据报表" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "游戏数据报表 · Hawk Admin",
-    description: "按区域、游戏或用户维度查询投入、支出、返缴率与受欢迎程度。",
+    description: "按区域、游戏或用户维度查询用户投入、用户出奖、返奖率与净值。",
     images: ["/og.png"],
   },
 };
