@@ -3,7 +3,6 @@
 import { useMemo, useRef, useState } from "react";
 
 type View = "overview" | "users";
-type Scope = "region" | "user";
 
 type GameRow = {
   game: string; region: string; active: number; plays: number; total: number;
@@ -23,6 +22,13 @@ const games: GameRow[] = [
   { game: "Lucky Wheel", region: "菲律宾", active: 6380, plays: 41260, total: 1264800, input: 1084200, output: 1014240, net: 69960, rate: 93.55, rank: "Top 5" },
   { game: "Crash", region: "印尼", active: 4500, plays: 28640, total: 994000, input: 782400, output: 741120, net: 41280, rate: 94.72, rank: "Top 6" },
 ];
+
+const gameCatalog: Record<string, { mark: string; color: string; id: string; vendor: string }> = {
+  "Lucky Wheel": { mark: "LW", color: "#409eff", id: "GAME-10001", vendor: "Hawk Games" },
+  Crash: { mark: "CR", color: "#7c3aed", id: "GAME-10002", vendor: "Hawk Games" },
+  "Slot King": { mark: "SK", color: "#f59e0b", id: "GAME-10003", vendor: "Hawk Games" },
+  Dice: { mark: "D6", color: "#16a34a", id: "GAME-10004", vendor: "Hawk Games" },
+};
 
 const users: UserRow[] = [
   { id: "9382711", nickname: "Mia", region: "印尼", game: "Lucky Wheel", days: 14, plays: 386, input: 18620, output: 16880, net: 1740, rate: 90.66, latest: "2026-07-17 10:22", rank: "Top 1" },
@@ -72,9 +78,30 @@ function FilterField({ label, children, wide = false, error }: { label: string; 
   return <label className={`filter-field ${wide ? "wide" : ""} ${error ? "has-error" : ""}`}><span>{label}</span>{children}{error && <em>{error}</em>}</label>;
 }
 
+function GameCell({ name }: { name: string }) {
+  const meta = gameCatalog[name] ?? { mark: "G", color: "#667085", id: "待确认", vendor: "待确认" };
+
+  return (
+    <div className="game-cell">
+      <span className="game-icon" style={{ color: meta.color, background: `${meta.color}18` }} aria-hidden="true">{meta.mark}</span>
+      <b>{name}</b>
+      <span className="game-info-wrap">
+        <button type="button" className="game-info-button" aria-label={`查看 ${name} 游戏信息`}>?</button>
+        <span className="game-popover" role="tooltip">
+          <span className="game-popover-head">
+            <span className="game-popover-icon" style={{ color: meta.color, background: `${meta.color}18` }} aria-hidden="true">{meta.mark}</span>
+            <span><small>游戏资料</small><strong>{name}</strong></span>
+          </span>
+          <span className="game-meta-row"><em>游戏 ID</em><b>{meta.id}</b></span>
+          <span className="game-meta-row"><em>游戏厂商</em><b>{meta.vendor}</b></span>
+        </span>
+      </span>
+    </div>
+  );
+}
+
 export default function Home() {
   const [view, setView] = useState<View>("overview");
-  const [scope, setScope] = useState<Scope>("region");
   const [region, setRegion] = useState("全部区域");
   const [game, setGame] = useState("全部游戏");
   const [userId, setUserId] = useState("");
@@ -89,7 +116,6 @@ export default function Home() {
   const [adminMenu, setAdminMenu] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [toast, setToast] = useState("");
-  const [userError, setUserError] = useState("");
   const [exportConfirm, setExportConfirm] = useState(false);
   const [exporting, setExporting] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -101,18 +127,18 @@ export default function Home() {
   }
 
   function simulateQuery(message = "查询完成，数据已更新") {
-    if (scope === "user" && view === "overview" && !userId) {
-      setUserError("请选择要查询的用户 ID");
-      return;
-    }
-    setUserError("");
     setLoading(true);
     setTimeout(() => { setLoading(false); notify(message); }, 520);
   }
 
-  const filteredGames = useMemo(() => games.filter((row) =>
-    (region === "全部区域" || row.region === region) && (game === "全部游戏" || row.game === game)
-  ), [region, game]);
+  const filteredGames = useMemo(() => {
+    const selectedUser = userId ? users.find((row) => row.id === userId) : undefined;
+    return games.filter((row) =>
+      (region === "全部区域" || row.region === region) &&
+      (game === "全部游戏" || row.game === game) &&
+      (!selectedUser || (row.region === selectedUser.region && row.game === selectedUser.game))
+    );
+  }, [region, game, userId]);
 
   const filteredUsers = useMemo(() => {
     const keyword = appliedUser.keyword.trim().toLowerCase();
@@ -129,7 +155,7 @@ export default function Home() {
   const visibleUsers = filteredUsers.slice((page - 1) * pageSize, page * pageSize);
 
   function switchView(next: View) {
-    setView(next); setPage(1); setUserError("");
+    setView(next); setPage(1);
   }
 
   function queryUsers() {
@@ -139,7 +165,7 @@ export default function Home() {
   }
 
   function resetOverview() {
-    setScope("region"); setRegion("全部区域"); setGame("全部游戏"); setUserId(""); setUserError(""); notify("筛选条件已重置");
+    setRegion("全部区域"); setGame("全部游戏"); setUserId(""); notify("筛选条件已重置");
   }
 
   function resetUsers() {
@@ -200,10 +226,9 @@ export default function Home() {
           {view === "overview" ? (
             <>
               <section className="panel filter-panel overview-filters">
-                <FilterField label="统计范围"><div className="scope-switch"><button type="button" className={scope === "region" ? "active" : ""} onClick={() => { setScope("region"); setUserError(""); }}>区域汇总</button><button type="button" className={scope === "user" ? "active" : ""} onClick={() => setScope("user")}>单用户</button></div></FilterField>
                 <FilterField label="区域"><select value={region} onChange={(event) => setRegion(event.target.value)}><option>全部区域</option><option>印尼</option><option>菲律宾</option><option>沙特</option><option>泰国</option></select></FilterField>
                 <FilterField label="游戏"><select value={game} onChange={(event) => setGame(event.target.value)}><option>全部游戏</option><option>Lucky Wheel</option><option>Crash</option><option>Slot King</option><option>Dice</option></select></FilterField>
-                <FilterField label="用户ID" error={userError}><select disabled={scope !== "user"} value={userId} onChange={(event) => { setUserId(event.target.value); setUserError(""); }}><option value="">{scope === "user" ? "请选择用户ID" : "选择单用户后启用"}</option>{users.slice(0, 5).map((row) => <option key={row.id} value={row.id}>{row.id} · {row.nickname}</option>)}</select></FilterField>
+                <FilterField label="用户ID"><select value={userId} onChange={(event) => setUserId(event.target.value)}><option value="">全部用户</option>{users.slice(0, 5).map((row) => <option key={row.id} value={row.id}>{row.id} · {row.nickname}</option>)}</select></FilterField>
                 <FilterField label="统计日期" wide><input value="2026-07-01  -  2026-07-17" readOnly /></FilterField>
                 <div className="filter-actions"><button type="button" className="primary" onClick={() => simulateQuery()}>查询</button><button type="button" onClick={resetOverview}>重置</button><button type="button" className="success" onClick={() => setExportConfirm(true)}>导出报表</button></div>
                 <span className="update-time">数据更新时间：10:30</span>
@@ -223,7 +248,7 @@ export default function Home() {
                 <article className="panel ranking-panel"><div className="panel-title"><h2>游戏区域统计</h2><span>按活跃用户 + 游戏次数综合排序</span></div><div className="rank-list">{rankData.map((item, index) => <div className="rank-row" key={item.region}><b className={index === 0 ? "first" : ""}>{index + 1}</b><strong>{item.region}</strong><span>{item.game}</span><div><i style={{ width: `${item.value / 35 * 100}%`, background: item.color }} /></div><em>{item.value}%</em></div>)}</div></article>
               </section>
 
-              <section className="panel table-panel"><div className="table-heading"><div><h2>游戏汇总数据</h2><span>点击“用户明细”进入对应游戏的用户列表</span></div><button type="button" className="table-tool" onClick={() => setExportConfirm(true)}>⇩ 导出当前结果</button></div><div className="table-wrap"><table><thead><tr><th>游戏</th><th>区域</th><th>活跃用户</th><th>游戏次数</th><th>游戏总值</th><th>投入</th><th>支出</th><th>净值</th><th>返缴率</th><th>热度</th><th>操作</th></tr></thead><tbody>{loading ? <tr><td colSpan={11}><div className="loading-state"><span />正在加载报表数据…</div></td></tr> : filteredGames.length ? filteredGames.slice(0, 4).map((row) => <tr key={`${row.region}-${row.game}`}><td><b>{row.game}</b></td><td>{row.region}</td><td>{format.format(row.active)}</td><td>{format.format(row.plays)}</td><td>{money(row.total)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{money(row.net)}</td><td>{row.rate.toFixed(2)}%</td><td>{row.rank}</td><td><button type="button" className="row-action" onClick={() => openGameUsers(row.game)}>用户明细</button></td></tr>) : <tr><td colSpan={11}><div className="empty-state"><b>未找到匹配数据</b><span>请调整区域或游戏筛选条件后重试。</span><button type="button" onClick={resetOverview}>清除筛选</button></div></td></tr>}</tbody></table></div><div className="pagination"><span>共 {filteredGames.length} 条 ｜ 20 条/页</span><button className="active" type="button">1</button><button type="button" disabled>2</button></div></section>
+              <section className="panel table-panel"><div className="table-heading"><div><h2>游戏汇总数据</h2><span>悬浮问号查看游戏资料，点击“用户明细”进入对应游戏的用户列表</span></div><button type="button" className="table-tool" onClick={() => setExportConfirm(true)}>⇩ 导出当前结果</button></div><div className="table-wrap game-table-wrap"><table><thead><tr><th>游戏</th><th>区域</th><th>活跃用户</th><th>游戏次数</th><th>游戏总值</th><th>投入</th><th>支出</th><th>净值</th><th>返缴率</th><th>热度</th><th>操作</th></tr></thead><tbody>{loading ? <tr><td colSpan={11}><div className="loading-state"><span />正在加载报表数据…</div></td></tr> : filteredGames.length ? filteredGames.slice(0, 4).map((row) => <tr key={`${row.region}-${row.game}`}><td><GameCell name={row.game} /></td><td>{row.region}</td><td>{format.format(row.active)}</td><td>{format.format(row.plays)}</td><td>{money(row.total)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{money(row.net)}</td><td>{row.rate.toFixed(2)}%</td><td>{row.rank}</td><td><button type="button" className="row-action" onClick={() => openGameUsers(row.game)}>用户明细</button></td></tr>) : <tr><td colSpan={11}><div className="empty-state"><b>未找到匹配数据</b><span>请调整区域、游戏或用户筛选条件后重试。</span><button type="button" onClick={resetOverview}>清除筛选</button></div></td></tr>}</tbody></table></div><div className="pagination"><span>共 {filteredGames.length} 条 ｜ 20 条/页</span><button className="active" type="button">1</button><button type="button" disabled>2</button></div></section>
             </>
           ) : (
             <>
