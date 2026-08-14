@@ -8,7 +8,7 @@ type Vendor = "热游" | "灵仙";
 type DetailPeriod = "day" | "week" | "month";
 
 type GameRow = {
-  game: string; region: string; active: number; plays: number; total: number;
+  game: string; region: string; active: number; plays: number;
   input: number; output: number; net: number; rate: number; rank: string;
 };
 
@@ -25,12 +25,12 @@ type GameUserRanking = {
 const regions = ["阿拉伯", "土耳其", "印度", "印尼", "巴基斯坦", "孟加拉", "菲律宾", "巴西", "其他"];
 
 const games: GameRow[] = [
-  { game: "Lucky Wheel", region: "印尼", active: 28420, plays: 186230, total: 6420800, input: 5610200, output: 5091880, net: 518320, rate: 90.76, rank: "Top 1" },
-  { game: "Crash", region: "菲律宾", active: 19860, plays: 142680, total: 4980600, input: 4382400, output: 4078920, net: 303480, rate: 93.08, rank: "Top 2" },
-  { game: "Slot King", region: "阿拉伯", active: 15320, plays: 98410, total: 3840000, input: 3316200, output: 2968360, net: 347840, rate: 89.51, rank: "Top 3" },
-  { game: "Dice", region: "土耳其", active: 11940, plays: 74260, total: 2420200, input: 2008800, output: 1859200, net: 149600, rate: 92.55, rank: "Top 4" },
-  { game: "Lucky Wheel", region: "印度", active: 6380, plays: 41260, total: 1264800, input: 1084200, output: 1014240, net: 69960, rate: 93.55, rank: "Top 5" },
-  { game: "Crash", region: "巴基斯坦", active: 4500, plays: 28640, total: 994000, input: 782400, output: 741120, net: 41280, rate: 94.72, rank: "Top 6" },
+  { game: "Lucky Wheel", region: "印尼", active: 28420, plays: 186230, input: 5610200, output: 5091880, net: 518320, rate: 90.76, rank: "Top 1" },
+  { game: "Crash", region: "菲律宾", active: 19860, plays: 142680, input: 4382400, output: 4078920, net: 303480, rate: 93.08, rank: "Top 2" },
+  { game: "Slot King", region: "阿拉伯", active: 15320, plays: 98410, input: 3316200, output: 2968360, net: 347840, rate: 89.51, rank: "Top 3" },
+  { game: "Dice", region: "土耳其", active: 11940, plays: 74260, input: 2008800, output: 1859200, net: 149600, rate: 92.55, rank: "Top 4" },
+  { game: "Lucky Wheel", region: "印度", active: 6380, plays: 41260, input: 1084200, output: 1014240, net: 69960, rate: 93.55, rank: "Top 5" },
+  { game: "Crash", region: "巴基斯坦", active: 4500, plays: 28640, input: 782400, output: 741120, net: 41280, rate: 94.72, rank: "Top 6" },
 ];
 
 const gameCatalog: Record<string, { icon: Icon; color: string; id: string; vendor: Vendor }> = {
@@ -373,9 +373,9 @@ export default function Home() {
     setExporting(true);
     setTimeout(() => {
       const rows = view === "overview" ? filteredGames : filteredUsers;
-      const header = view === "overview" ? ["游戏", "区域", "活跃用户", "游戏次数", "游戏总流水", "用户投入", "用户出奖", "净值", "返奖率", "热度"] : ["用户ID", "昵称", "区域", "偏好游戏", "活跃天数", "游戏次数", "用户投入", "用户出奖", "净值", "返奖率", "最近游戏时间", "偏好排名"];
+      const header = view === "overview" ? ["游戏", "区域", "活跃用户", "游戏次数", "用户投入", "用户出奖", "净值", "返奖率", "热度"] : ["用户ID", "昵称", "区域", "偏好游戏", "活跃天数", "游戏次数", "用户投入", "用户出奖", "净值", "返奖率", "最近游戏时间", "偏好排名"];
       const exportRows = view === "overview"
-        ? (rows as GameRow[]).map((row) => [row.game, row.region, row.active, row.plays, row.total, row.input, row.output, row.net, row.rate, row.rank])
+        ? (rows as GameRow[]).map((row) => [row.game, row.region, row.active, row.plays, row.input, row.output, row.net, row.rate, row.rank])
         : (rows as UserRow[]).map((row) => [row.id, row.nickname, row.region, row.game, row.days, row.plays, row.input, row.output, row.net, row.rate, row.latest, row.rank]);
       const body = exportRows.map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(","));
       const blob = new Blob(["\ufeff" + [header.join(","), ...body].join("\n")], { type: "text/csv;charset=utf-8" });
@@ -431,7 +431,6 @@ export default function Home() {
 
               <section className="overview-metrics">
                 <MetricCard mark="活" title="活跃游戏用户" value="86,420" note="较上周期 +12.6%" tone="blue" />
-                <MetricCard mark="游" title="游戏总流水" value={<Money value={18_920_400} compact />} valueTitle={`完整金额：${moneyText(18_920_400)} 金币`} note="统计期内游戏累计流水" tone="violet" compact />
                 <MetricCard mark="投" title="用户投入" value={<Money value={16_480_200} compact />} valueTitle={`完整金额：${moneyText(16_480_200)} 金币`} note="用户实际投入金额" tone="amber" compact />
                 <MetricCard mark="奖" title="用户出奖" value={<Money value={14_998_360} compact />} valueTitle={`完整金额：${moneyText(14_998_360)} 金币`} note="游戏返奖/派奖金额" tone="red" compact />
                 <MetricCard mark="净" title="净值" value={<Money value={1_481_840} compact />} valueTitle={`完整金额：${moneyText(1_481_840)} 金币`} note="用户投入 - 用户出奖" tone="cyan" compact />
@@ -443,7 +442,7 @@ export default function Home() {
                 <article className="panel ranking-panel"><div className="panel-title"><h2>游戏区域统计</h2><span>按活跃用户 + 游戏次数综合排序</span></div><div className="rank-list">{rankData.map((item, index) => <div className="rank-row" key={item.region}><b className={index === 0 ? "first" : ""}>{index + 1}</b><strong>{item.region}</strong><span>{item.game}</span><div><i style={{ width: `${item.value / 35 * 100}%`, background: item.color }} /></div><em>{item.value}%</em></div>)}</div></article>
               </section>
 
-              <section className="panel table-panel"><div className="table-heading"><div><h2>游戏汇总数据</h2><span>悬浮问号查看游戏资料，点击“用户明细”查看该游戏的用户排行</span></div><button type="button" className="table-tool" onClick={() => setExportConfirm(true)}>⇩ 导出当前结果</button></div><div className="table-wrap game-table-wrap"><table><thead><tr><th>游戏</th><th>区域</th><th>活跃用户</th><th>游戏次数</th><th>游戏总流水</th><th>用户投入</th><th>用户出奖</th><th>净值</th><th>返奖率</th><th>热度</th><th>操作</th></tr></thead><tbody>{loading ? <tr><td colSpan={11}><div className="loading-state"><span />正在加载报表数据…</div></td></tr> : filteredGames.length ? filteredGames.slice(0, 4).map((row) => <tr key={`${row.region}-${row.game}`}><td><GameCell name={row.game} /></td><td>{row.region}</td><td>{format.format(row.active)}</td><td>{format.format(row.plays)}</td><td>{money(row.total)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{money(row.net)}</td><td>{row.rate.toFixed(2)}%</td><td>{row.rank}</td><td><button type="button" className="row-action" onClick={() => openGameDetails(row)}>用户明细</button></td></tr>) : <tr><td colSpan={11}><div className="empty-state"><b>未找到匹配数据</b><span>请调整区域、游戏或用户筛选条件后重试。</span><button type="button" onClick={resetOverview}>清除筛选</button></div></td></tr>}</tbody></table></div><div className="pagination"><span>共 {filteredGames.length} 条 ｜ 20 条/页</span><button className="active" type="button">1</button><button type="button" disabled>2</button></div></section>
+              <section className="panel table-panel"><div className="table-heading"><div><h2>游戏汇总数据</h2><span>悬浮问号查看游戏资料，点击“用户明细”查看该游戏的用户排行</span></div><button type="button" className="table-tool" onClick={() => setExportConfirm(true)}>⇩ 导出当前结果</button></div><div className="table-wrap game-table-wrap"><table><thead><tr><th>游戏</th><th>区域</th><th>活跃用户</th><th>游戏次数</th><th>用户投入</th><th>用户出奖</th><th>净值</th><th>返奖率</th><th>热度</th><th>操作</th></tr></thead><tbody>{loading ? <tr><td colSpan={10}><div className="loading-state"><span />正在加载报表数据…</div></td></tr> : filteredGames.length ? filteredGames.slice(0, 4).map((row) => <tr key={`${row.region}-${row.game}`}><td><GameCell name={row.game} /></td><td>{row.region}</td><td>{format.format(row.active)}</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{money(row.net)}</td><td>{row.rate.toFixed(2)}%</td><td>{row.rank}</td><td><button type="button" className="row-action" onClick={() => openGameDetails(row)}>用户明细</button></td></tr>) : <tr><td colSpan={10}><div className="empty-state"><b>未找到匹配数据</b><span>请调整区域、游戏或用户筛选条件后重试。</span><button type="button" onClick={resetOverview}>清除筛选</button></div></td></tr>}</tbody></table></div><div className="pagination"><span>共 {filteredGames.length} 条 ｜ 20 条/页</span><button className="active" type="button">1</button><button type="button" disabled>2</button></div></section>
             </>
           ) : (
             <>
