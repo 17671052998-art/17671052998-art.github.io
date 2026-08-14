@@ -18,7 +18,7 @@ type UserRow = {
 };
 
 type GameUserRanking = {
-  id: string; nickname: string; region: string; active: number; plays: number;
+  id: string; nickname: string; region: string; plays: number;
   input: number; output: number; net: number; rate: number;
 };
 
@@ -77,10 +77,10 @@ const rateLinePoints = trend.map((item, index) => {
   return `${x},${y}`;
 }).join(" ");
 
-const detailPeriodConfig: Record<DetailPeriod, { label: string; scope: string; scale: number; activeScale: number }> = {
-  day: { label: "按日", scope: "2026-07-17", scale: 0.12, activeScale: 0.32 },
-  week: { label: "按周", scope: "2026-07-13 至 2026-07-19", scale: 0.56, activeScale: 1.25 },
-  month: { label: "按月", scope: "2026-07-01 至 2026-07-31", scale: 1.75, activeScale: 3.20 },
+const detailPeriodConfig: Record<DetailPeriod, { label: string; scope: string; scale: number }> = {
+  day: { label: "按日", scope: "2026-07-17", scale: 0.12 },
+  week: { label: "按周", scope: "2026-07-13 至 2026-07-19", scale: 0.56 },
+  month: { label: "按月", scope: "2026-07-01 至 2026-07-31", scale: 1.75 },
 };
 
 function buildGameUserRankings(gameName: string, period: DetailPeriod): GameUserRanking[] {
@@ -93,7 +93,6 @@ function buildGameUserRankings(gameName: string, period: DetailPeriod): GameUser
       id: user.id,
       nickname: user.nickname,
       region: user.region,
-      active: Math.max(1, Math.round(user.days * config.activeScale + user.plays * config.scale / 70)),
       plays: Math.max(1, Math.round(user.plays * config.scale)),
       input,
       output,
@@ -408,12 +407,11 @@ export default function Home() {
   const detailRankings = useMemo(() => detailGame ? buildGameUserRankings(detailGame.game, detailPeriod).filter((row) => detailRegion === "全部区域" || row.region === detailRegion) : [], [detailGame, detailPeriod, detailRegion]);
   const detailTotals = useMemo(() => {
     const totals = detailRankings.reduce((sum, row) => ({
-      active: sum.active + row.active,
       plays: sum.plays + row.plays,
       input: sum.input + row.input,
       output: sum.output + row.output,
       net: sum.net + row.net,
-    }), { active: 0, plays: 0, input: 0, output: 0, net: 0 });
+    }), { plays: 0, input: 0, output: 0, net: 0 });
     return { ...totals, rate: totals.input ? totals.output / totals.input * 100 : 0 };
   }, [detailRankings]);
   const detailGameMeta = detailGame ? gameCatalog[detailGame.game] : undefined;
@@ -564,7 +562,6 @@ export default function Home() {
             </div>
 
             <div className="game-detail-metrics">
-              <div><span>活跃用户人次</span><strong>{format.format(detailTotals.active)}</strong></div>
               <div><span>游戏下注次数</span><strong>{format.format(detailTotals.plays)}</strong></div>
               <div><span>用户投入</span><strong>{money(detailTotals.input)}</strong></div>
               <div><span>用户出奖</span><strong>{money(detailTotals.output)}</strong></div>
@@ -574,8 +571,8 @@ export default function Home() {
 
             <div className="game-detail-table-wrap">
               <table className="game-detail-table">
-                <thead><tr><th>用户信息</th><th>活跃用户人次</th><th>游戏下注次数</th><th>用户投入</th><th>用户出奖</th><th>净值</th><th>返奖率</th></tr></thead>
-                <tbody>{detailRankings.length ? detailRankings.map((row, index) => <tr key={row.id}><td><div className="game-detail-user"><span className={`game-detail-rank rank-${index + 1}`}>{index + 1}</span><span className="game-detail-user-avatar">{row.nickname.slice(0, 1).toUpperCase()}</span><span className="game-detail-user-copy"><strong>{row.nickname}</strong><small>ID {row.id} · {row.region}</small></span></div></td><td>{format.format(row.active)}</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{money(row.net)}</td><td className={row.rate >= 95 ? "rate-good" : ""}>{row.rate.toFixed(2)}%</td></tr>) : <tr><td colSpan={7}><div className="game-detail-empty"><b>暂无用户数据</b><span>{detailGame.game} 在“{detailRegion}”暂无用户记录</span></div></td></tr>}</tbody>
+                <thead><tr><th>用户信息</th><th>游戏下注次数</th><th>用户投入</th><th>用户出奖</th><th>净值</th><th>返奖率</th></tr></thead>
+                <tbody>{detailRankings.length ? detailRankings.map((row, index) => <tr key={row.id}><td><div className="game-detail-user"><span className={`game-detail-rank rank-${index + 1}`}>{index + 1}</span><span className="game-detail-user-avatar">{row.nickname.slice(0, 1).toUpperCase()}</span><span className="game-detail-user-copy"><strong>{row.nickname}</strong><small>ID {row.id} · {row.region}</small></span></div></td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{money(row.net)}</td><td className={row.rate >= 95 ? "rate-good" : ""}>{row.rate.toFixed(2)}%</td></tr>) : <tr><td colSpan={6}><div className="game-detail-empty"><b>暂无用户数据</b><span>{detailGame.game} 在“{detailRegion}”暂无用户记录</span></div></td></tr>}</tbody>
               </table>
             </div>
 
