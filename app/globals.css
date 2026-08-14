@@ -168,9 +168,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .bar:hover { filter: brightness(.92); }
 .bar-group > span { margin-top: 8px; color: var(--subtle); font-size: 9px; }
 .line-layer { height: 150px; pointer-events: none; }
+.rate-line { width: 100%; height: 100%; position: absolute; inset: 0; overflow: visible; }
+.rate-line polyline { fill: none; stroke: var(--green); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 .line-cell { position: relative; }
 .line-point { width: 8px; height: 8px; position: absolute; z-index: 2; left: 50%; padding: 0; border: 2px solid var(--green); border-radius: 50%; background: white; pointer-events: auto; transform: translateX(-50%); }
-.line-point i { width: calc(1000% + 8px); height: 2px; position: absolute; z-index: -1; left: 4px; top: 1px; display: block; background: var(--green); transform-origin: left center; }
 
 .rank-list { margin-top: 17px; }
 .rank-row { display: grid; grid-template-columns: 22px 70px 100px 1fr 48px; align-items: center; gap: 8px; height: 39px; font-size: 11px; }
