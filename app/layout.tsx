@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://hawk-play-stats-20260814.classy-star-8757.chatgpt.site"),
+  metadataBase: new URL("https://17671052998-art.github.io"),
   title: "游戏数据报表 · Hawk Admin",
   description: "按区域、游戏或用户维度查询投入、支出、返缴率与受欢迎程度。",
   openGraph: {
