@@ -1,10 +1,11 @@
 "use client";
 
-import { CaretDownIcon, CheckIcon, CrownIcon, DiceFiveIcon, GameControllerIcon, RocketLaunchIcon, SpinnerBallIcon, type Icon } from "@phosphor-icons/react";
+import { CaretDownIcon, CheckIcon, CrownIcon, DiceFiveIcon, GameControllerIcon, RocketLaunchIcon, SpinnerBallIcon, XIcon, type Icon } from "@phosphor-icons/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type View = "overview" | "users";
 type Vendor = "热游" | "灵仙";
+type DetailPeriod = "day" | "week" | "month";
 
 type GameRow = {
   game: string; region: string; active: number; plays: number; total: number;
@@ -14,6 +15,11 @@ type GameRow = {
 type UserRow = {
   id: string; nickname: string; region: string; game: string; days: number; plays: number;
   input: number; output: number; net: number; rate: number; latest: string; rank: string;
+};
+
+type GameDetailStat = {
+  period: string; active: number; plays: number; input: number;
+  output: number; net: number; rate: number;
 };
 
 const games: GameRow[] = [
@@ -68,6 +74,45 @@ const rateLinePoints = trend.map((item, index) => {
   const y = 150 * (1 - bottomPercent / 100);
   return `${x},${y}`;
 }).join(" ");
+
+const detailPeriodConfig: Record<DetailPeriod, { label: string; scope: string; periods: string[]; weights: number[]; scale: number; userScale: number }> = {
+  day: {
+    label: "按日", scope: "2026-07-11 至 2026-07-17",
+    periods: ["07/11", "07/12", "07/13", "07/14", "07/15", "07/16", "07/17"],
+    weights: [0.11, 0.13, 0.12, 0.14, 0.15, 0.17, 0.18], scale: 0.46, userScale: 0.56,
+  },
+  week: {
+    label: "按周", scope: "2026-06-08 至 2026-07-19",
+    periods: ["06/08–06/14", "06/15–06/21", "06/22–06/28", "06/29–07/05", "07/06–07/12", "07/13–07/19"],
+    weights: [0.14, 0.15, 0.16, 0.17, 0.18, 0.20], scale: 1.82, userScale: 1.38,
+  },
+  month: {
+    label: "按月", scope: "2026-02 至 2026-07",
+    periods: ["2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07"],
+    weights: [0.13, 0.15, 0.16, 0.17, 0.18, 0.21], scale: 8.40, userScale: 3.75,
+  },
+};
+
+const detailRateOffsets = [-0.82, 0.36, -0.58, 0.44, -0.18, 0.72, -0.24];
+
+function buildGameDetailStats(gameRow: GameRow, period: DetailPeriod): GameDetailStat[] {
+  const config = detailPeriodConfig[period];
+  return config.periods.map((label, index) => {
+    const weight = config.weights[index];
+    const input = Math.round(gameRow.input * config.scale * weight);
+    const rate = Math.max(0, Math.min(100, gameRow.rate + detailRateOffsets[index]));
+    const output = Math.round(input * rate / 100);
+    return {
+      period: label,
+      active: Math.round(gameRow.active * config.userScale * weight),
+      plays: Math.round(gameRow.plays * config.scale * weight),
+      input,
+      output,
+      net: input - output,
+      rate,
+    };
+  });
+}
 
 const rankData = [
   { region: "印尼", game: "Lucky Wheel", value: 32.8, color: "#409eff" },
@@ -228,7 +273,25 @@ export default function Home() {
   const [toast, setToast] = useState("");
   const [exportConfirm, setExportConfirm] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [detailGame, setDetailGame] = useState<GameRow | null>(null);
+  const [detailPeriod, setDetailPeriod] = useState<DetailPeriod>("day");
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const detailCloseRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    if (!detailGame) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    requestAnimationFrame(() => detailCloseRef.current?.focus());
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setDetailGame(null);
+    }
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [detailGame]);
 
   function notify(message: string) {
     setToast(message);
@@ -263,6 +326,20 @@ export default function Home() {
   const pageSize = 8;
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
   const visibleUsers = filteredUsers.slice((page - 1) * pageSize, page * pageSize);
+  const detailStats = useMemo(() => detailGame ? buildGameDetailStats(detailGame, detailPeriod) : [], [detailGame, detailPeriod]);
+  const detailTotals = useMemo(() => {
+    const totals = detailStats.reduce((sum, row) => ({
+      active: sum.active + row.active,
+      plays: sum.plays + row.plays,
+      input: sum.input + row.input,
+      output: sum.output + row.output,
+      net: sum.net + row.net,
+    }), { active: 0, plays: 0, input: 0, output: 0, net: 0 });
+    return { ...totals, rate: totals.input ? totals.output / totals.input * 100 : 0 };
+  }, [detailStats]);
+  const detailGameMeta = detailGame ? gameCatalog[detailGame.game] : undefined;
+  const DetailGameIcon = detailGameMeta?.icon ?? GameControllerIcon;
+  const activeDetailConfig = detailPeriodConfig[detailPeriod];
 
   function switchView(next: View) {
     setView(next); setPage(1);
@@ -283,8 +360,9 @@ export default function Home() {
     setAppliedUser({ keyword: "", region: "全部区域", game: "全部游戏", sort: "净值降序" }); setPage(1); notify("筛选条件已重置");
   }
 
-  function openGameUsers(gameName: string) {
-    setView("users"); setUserGame(gameName); setAppliedUser({ keyword: "", region: "全部区域", game: gameName, sort: "净值降序" }); setPage(1); notify(`已进入 ${gameName} 用户明细`);
+  function openGameDetails(gameRow: GameRow) {
+    setDetailPeriod("day");
+    setDetailGame(gameRow);
   }
 
   function performExport() {
@@ -358,7 +436,7 @@ export default function Home() {
                 <article className="panel ranking-panel"><div className="panel-title"><h2>游戏区域统计</h2><span>按活跃用户 + 游戏次数综合排序</span></div><div className="rank-list">{rankData.map((item, index) => <div className="rank-row" key={item.region}><b className={index === 0 ? "first" : ""}>{index + 1}</b><strong>{item.region}</strong><span>{item.game}</span><div><i style={{ width: `${item.value / 35 * 100}%`, background: item.color }} /></div><em>{item.value}%</em></div>)}</div></article>
               </section>
 
-              <section className="panel table-panel"><div className="table-heading"><div><h2>游戏汇总数据</h2><span>悬浮问号查看游戏资料，点击“用户明细”进入对应游戏的用户列表</span></div><button type="button" className="table-tool" onClick={() => setExportConfirm(true)}>⇩ 导出当前结果</button></div><div className="table-wrap game-table-wrap"><table><thead><tr><th>游戏</th><th>区域</th><th>活跃用户</th><th>游戏次数</th><th>游戏总值</th><th>投入</th><th>支出</th><th>净值</th><th>返缴率</th><th>热度</th><th>操作</th></tr></thead><tbody>{loading ? <tr><td colSpan={11}><div className="loading-state"><span />正在加载报表数据…</div></td></tr> : filteredGames.length ? filteredGames.slice(0, 4).map((row) => <tr key={`${row.region}-${row.game}`}><td><GameCell name={row.game} /></td><td>{row.region}</td><td>{format.format(row.active)}</td><td>{format.format(row.plays)}</td><td>{money(row.total)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{money(row.net)}</td><td>{row.rate.toFixed(2)}%</td><td>{row.rank}</td><td><button type="button" className="row-action" onClick={() => openGameUsers(row.game)}>用户明细</button></td></tr>) : <tr><td colSpan={11}><div className="empty-state"><b>未找到匹配数据</b><span>请调整区域、游戏或用户筛选条件后重试。</span><button type="button" onClick={resetOverview}>清除筛选</button></div></td></tr>}</tbody></table></div><div className="pagination"><span>共 {filteredGames.length} 条 ｜ 20 条/页</span><button className="active" type="button">1</button><button type="button" disabled>2</button></div></section>
+              <section className="panel table-panel"><div className="table-heading"><div><h2>游戏汇总数据</h2><span>悬浮问号查看游戏资料，点击“用户明细”查看该游戏的周期统计</span></div><button type="button" className="table-tool" onClick={() => setExportConfirm(true)}>⇩ 导出当前结果</button></div><div className="table-wrap game-table-wrap"><table><thead><tr><th>游戏</th><th>区域</th><th>活跃用户</th><th>游戏次数</th><th>游戏总值</th><th>投入</th><th>支出</th><th>净值</th><th>返缴率</th><th>热度</th><th>操作</th></tr></thead><tbody>{loading ? <tr><td colSpan={11}><div className="loading-state"><span />正在加载报表数据…</div></td></tr> : filteredGames.length ? filteredGames.slice(0, 4).map((row) => <tr key={`${row.region}-${row.game}`}><td><GameCell name={row.game} /></td><td>{row.region}</td><td>{format.format(row.active)}</td><td>{format.format(row.plays)}</td><td>{money(row.total)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{money(row.net)}</td><td>{row.rate.toFixed(2)}%</td><td>{row.rank}</td><td><button type="button" className="row-action" onClick={() => openGameDetails(row)}>用户明细</button></td></tr>) : <tr><td colSpan={11}><div className="empty-state"><b>未找到匹配数据</b><span>请调整区域、游戏或用户筛选条件后重试。</span><button type="button" onClick={resetOverview}>清除筛选</button></div></td></tr>}</tbody></table></div><div className="pagination"><span>共 {filteredGames.length} 条 ｜ 20 条/页</span><button className="active" type="button">1</button><button type="button" disabled>2</button></div></section>
             </>
           ) : (
             <>
@@ -379,6 +457,46 @@ export default function Home() {
           )}
         </section>
       </div>
+
+      {detailGame && detailGameMeta && (
+        <div className="modal-layer game-detail-layer">
+          <button className="modal-backdrop" type="button" aria-label="关闭游戏用户明细" onClick={() => setDetailGame(null)} />
+          <section className="game-detail-modal" role="dialog" aria-modal="true" aria-labelledby="game-detail-title" aria-describedby="game-detail-scope">
+            <header className="game-detail-head">
+              <div className="game-detail-identity">
+                <span className="game-detail-avatar" style={{ color: detailGameMeta.color, background: `${detailGameMeta.color}18` }}><DetailGameIcon size={28} weight="duotone" aria-hidden="true" /></span>
+                <div><h2 id="game-detail-title">{detailGame.game} 用户游戏统计</h2><p>{detailGameMeta.id} · {detailGameMeta.vendor} · {detailGame.region}</p></div>
+              </div>
+              <button ref={detailCloseRef} type="button" className="game-detail-close" aria-label="关闭游戏用户明细" onClick={() => setDetailGame(null)}><XIcon size={18} weight="bold" aria-hidden="true" /></button>
+            </header>
+
+            <div className="game-detail-toolbar">
+              <div className="detail-period-tabs" role="tablist" aria-label="统计维度">
+                {(Object.keys(detailPeriodConfig) as DetailPeriod[]).map((period) => <button key={period} type="button" role="tab" aria-selected={detailPeriod === period} className={detailPeriod === period ? "active" : ""} onClick={() => setDetailPeriod(period)}>{detailPeriodConfig[period].label}</button>)}
+              </div>
+              <span id="game-detail-scope">统计范围：{activeDetailConfig.scope}</span>
+            </div>
+
+            <div className="game-detail-metrics">
+              <div><span>活跃用户人次</span><strong>{format.format(detailTotals.active)}</strong></div>
+              <div><span>游戏次数</span><strong>{format.format(detailTotals.plays)}</strong></div>
+              <div><span>总投入</span><strong>{money(detailTotals.input)}</strong></div>
+              <div><span>总支出</span><strong>{money(detailTotals.output)}</strong></div>
+              <div><span>净值</span><strong>{money(detailTotals.net)}</strong></div>
+              <div><span>返缴率</span><strong>{detailTotals.rate.toFixed(2)}%</strong></div>
+            </div>
+
+            <div className="game-detail-table-wrap">
+              <table className="game-detail-table">
+                <thead><tr><th>统计周期</th><th>活跃用户人次</th><th>游戏次数</th><th>投入</th><th>支出</th><th>净值</th><th>返缴率</th></tr></thead>
+                <tbody>{detailStats.map((row) => <tr key={row.period}><td><b>{row.period}</b></td><td>{format.format(row.active)}</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{money(row.net)}</td><td className={row.rate >= 95 ? "rate-good" : ""}>{row.rate.toFixed(2)}%</td></tr>)}</tbody>
+              </table>
+            </div>
+
+            <footer className="game-detail-footer"><span>净值 = 投入 - 支出；返缴率 = 支出 ÷ 投入 × 100%。</span><button type="button" onClick={() => setDetailGame(null)}>关闭</button></footer>
+          </section>
+        </div>
+      )}
 
       {exportConfirm && <div className="modal-layer"><button className="modal-backdrop" type="button" aria-label="关闭导出确认" onClick={() => !exporting && setExportConfirm(false)} /><section className="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="export-title"><span className="confirm-icon">⇩</span><h2 id="export-title">确认导出数据？</h2><p>将按当前筛选条件导出 {view === "overview" ? filteredGames.length : filteredUsers.length} 条{view === "overview" ? "游戏汇总" : "用户明细"}数据，文件格式为 CSV。</p><div><button type="button" disabled={exporting} onClick={() => setExportConfirm(false)}>取消</button><button type="button" className="success" disabled={exporting} onClick={performExport}>{exporting ? "生成中…" : "确认导出"}</button></div></section></div>}
       <div className={`toast ${toast ? "show" : ""}`} role="status" aria-live="polite"><span>✓</span>{toast}</div>
