@@ -120,9 +120,9 @@ const amountUnitFormat = new Intl.NumberFormat("zh-CN", { maximumFractionDigits:
 const amountUnitText = (value: number) => {
   const absoluteValue = Math.abs(value);
   const sign = value < 0 ? "-" : "";
-  if (absoluteValue >= 100_000_000) return `约 ${sign}${amountUnitFormat.format(absoluteValue / 100_000_000)} 亿`;
-  if (absoluteValue >= 10_000) return `约 ${sign}${amountUnitFormat.format(absoluteValue / 10_000)} 万`;
-  return `约 ${moneyText(value)} 金币`;
+  if (absoluteValue >= 100_000_000) return `${sign}${amountUnitFormat.format(absoluteValue / 100_000_000)} 亿`;
+  if (absoluteValue >= 10_000) return `${sign}${amountUnitFormat.format(absoluteValue / 10_000)} 万`;
+  return `${moneyText(value)} 金币`;
 };
 
 function Money({ value }: { value: number }) {
