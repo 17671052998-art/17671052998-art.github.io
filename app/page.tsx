@@ -116,6 +116,14 @@ const navItems = [
 
 const format = new Intl.NumberFormat("zh-CN");
 const moneyText = (value: number) => format.format(value);
+const amountUnitFormat = new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 2 });
+const amountUnitText = (value: number) => {
+  const absoluteValue = Math.abs(value);
+  const sign = value < 0 ? "-" : "";
+  if (absoluteValue >= 100_000_000) return `约 ${sign}${amountUnitFormat.format(absoluteValue / 100_000_000)} 亿`;
+  if (absoluteValue >= 10_000) return `约 ${sign}${amountUnitFormat.format(absoluteValue / 10_000)} 万`;
+  return `约 ${moneyText(value)} 金币`;
+};
 
 function Money({ value }: { value: number }) {
   const amount = moneyText(value);
@@ -124,8 +132,8 @@ function Money({ value }: { value: number }) {
 
 const money = (value: number) => <Money value={value} />;
 
-function MetricCard({ mark, title, value, note, tone, valueTitle }: { mark: string; title: string; value: React.ReactNode; note: string; tone: string; valueTitle?: string }) {
-  return <article className="metric-card"><span className={`metric-icon ${tone}`}>{mark}</span><div className="metric-copy"><p>{title}</p><small>{note}</small></div><strong title={valueTitle}>{value}</strong></article>;
+function MetricCard({ mark, title, value, note, tone, valueTitle, valueHint }: { mark: string; title: string; value: React.ReactNode; note: string; tone: string; valueTitle?: string; valueHint?: string }) {
+  return <article className="metric-card"><span className={`metric-icon ${tone}`}>{mark}</span><div className="metric-copy"><p>{title}</p><small>{note}</small></div><div className="metric-value-block"><strong title={valueTitle}>{value}</strong>{valueHint && <small className="metric-value-hint">{valueHint}</small>}</div></article>;
 }
 
 function FilterField({ label, children, wide = false, error }: { label: string; children: React.ReactNode; wide?: boolean; error?: string }) {
@@ -423,9 +431,9 @@ export default function Home() {
 
               <section className="overview-metrics">
                 <MetricCard mark="活" title="活跃游戏用户" value="86,420" note="较上周期 +12.6%" tone="blue" />
-                <MetricCard mark="投" title="用户投入" value={<Money value={16_480_200} />} valueTitle={`完整金额：${moneyText(16_480_200)} 金币`} note="用户实际投入金额" tone="amber" />
-                <MetricCard mark="奖" title="用户出奖" value={<Money value={14_998_360} />} valueTitle={`完整金额：${moneyText(14_998_360)} 金币`} note="游戏返奖/派奖金额" tone="red" />
-                <MetricCard mark="净" title="净值" value={<Money value={1_481_840} />} valueTitle={`完整金额：${moneyText(1_481_840)} 金币`} note="用户投入 - 用户出奖" tone="cyan" />
+                <MetricCard mark="投" title="用户投入" value={<Money value={16_480_200} />} valueTitle={`完整金额：${moneyText(16_480_200)} 金币`} valueHint={amountUnitText(16_480_200)} note="用户实际投入金额" tone="amber" />
+                <MetricCard mark="奖" title="用户出奖" value={<Money value={14_998_360} />} valueTitle={`完整金额：${moneyText(14_998_360)} 金币`} valueHint={amountUnitText(14_998_360)} note="游戏返奖/派奖金额" tone="red" />
+                <MetricCard mark="净" title="净值" value={<Money value={1_481_840} />} valueTitle={`完整金额：${moneyText(1_481_840)} 金币`} valueHint={amountUnitText(1_481_840)} note="用户投入 - 用户出奖" tone="cyan" />
                 <MetricCard mark="返" title="返奖率" value="91.01%" note="用户出奖 ÷ 用户投入 × 100%" tone="green" />
               </section>
 
