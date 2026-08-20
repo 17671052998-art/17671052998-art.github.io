@@ -102,13 +102,6 @@ function buildGameUserRankings(gameName: string, period: DetailPeriod): GameUser
   }).sort((a, b) => b.input - a.input);
 }
 
-const rankData = [
-  { region: "印尼", game: "Lucky Wheel", value: 32.8, color: "#409eff" },
-  { region: "菲律宾", game: "Crash", value: 24.6, color: "#7c3aed" },
-  { region: "阿拉伯", game: "Slot King", value: 19.3, color: "#f59e0b" },
-  { region: "土耳其", game: "Dice", value: 14.7, color: "#16a34a" },
-];
-
 const navItems = [
   ["⌂", "首页"], ["⚙", "系统管理"], ["◉", "用户管理"], ["◆", "充值管理"],
   ["●", "运营管理"], ["▣", "房间管理"], ["◈", "游戏管理"], ["▤", "报表中心"],
@@ -317,6 +310,15 @@ export default function Home() {
     );
   }, [region, game, userId]);
 
+  const regionInvestmentStats = useMemo(() => {
+    const byRegion = new Map<string, number>();
+    filteredGames.forEach((row) => byRegion.set(row.region, (byRegion.get(row.region) ?? 0) + row.input));
+    const entries = [...byRegion.entries()].map(([regionName, input]) => ({ region: regionName, input })).sort((a, b) => b.input - a.input);
+    const maximum = Math.max(...entries.map((item) => item.input), 1);
+    const colors = ["#409eff", "#7c3aed", "#f59e0b", "#16a34a", "#0891b2", "#ec4899", "#6366f1", "#14b8a6", "#94a3b8"];
+    return entries.map((item, index) => ({ ...item, width: item.input / maximum * 100, color: colors[index % colors.length] }));
+  }, [filteredGames]);
+
   const filteredUsers = useMemo(() => {
     const keyword = appliedUser.keyword.trim().toLowerCase();
     const rows = users.filter((row) =>
@@ -439,7 +441,7 @@ export default function Home() {
 
               <section className="analytics-row">
                 <article className="panel trend-panel"><div className="panel-title"><h2>用户投入 / 用户出奖 / 返奖率趋势</h2><div className="chart-legend"><span><i className="blue" />用户投入</span><span><i className="orange" />用户出奖</span><span><i className="green" />返奖率</span></div></div><div className="trend-chart"><div className="y-labels"><span>20M</span><span>15M</span><span>10M</span><span>5M</span><span>0</span></div><div className="chart-plot"><i className="grid g1" /><i className="grid g2" /><i className="grid g3" /><i className="grid g4" /><div className="bar-groups">{trend.map((item) => <div className="bar-group" key={item.date}><div className="bars"><button type="button" style={{ height: `${item.input / 22 * 100}%` }} className="bar input-bar" title={`${item.date} 用户投入 ${item.input}M`} /><button type="button" style={{ height: `${item.output / 22 * 100}%` }} className="bar output-bar" title={`${item.date} 用户出奖 ${item.output}M`} /></div><span>{item.date}</span></div>)}</div><div className="line-layer"><svg className="rate-line" viewBox="0 0 700 150" preserveAspectRatio="none" aria-hidden="true"><polyline points={rateLinePoints} /></svg>{trend.map((item) => <div className="line-cell" key={item.date}><button type="button" className="line-point" style={{ bottom: `${42 + (item.rate - 89) * 8}%` }} title={`${item.date} 返奖率 ${item.rate}%`} aria-label={`${item.date} 返奖率 ${item.rate}%`} /></div>)}</div></div></div></article>
-                <article className="panel ranking-panel"><div className="panel-title"><h2>游戏区域统计</h2><span>按活跃用户 + 游戏次数综合排序</span></div><div className="rank-list">{rankData.map((item, index) => <div className="rank-row" key={item.region}><b className={index === 0 ? "first" : ""}>{index + 1}</b><strong>{item.region}</strong><span>{item.game}</span><div><i style={{ width: `${item.value / 35 * 100}%`, background: item.color }} /></div><em>{item.value}%</em></div>)}</div></article>
+                <article className="panel ranking-panel"><div className="panel-title"><h2>游戏区域用户投入</h2><span>{game === "全部游戏" ? "按区域汇总全部游戏用户投入" : `${game} 各区域用户投入`}</span></div><div className="rank-list">{regionInvestmentStats.length ? regionInvestmentStats.map((item, index) => <div className="rank-row" key={item.region}><b className={index === 0 ? "first" : ""}>{index + 1}</b><strong>{item.region}</strong><span>{game === "全部游戏" ? "全部游戏" : game}</span><div><i style={{ width: `${item.width}%`, background: item.color }} /></div><em title={`${moneyText(item.input)} 金币`}>{money(item.input)}</em></div>) : <div className="rank-empty">暂无匹配区域数据</div>}</div></article>
               </section>
 
               <section className="panel table-panel"><div className="table-heading"><div><h2>游戏汇总数据</h2><span>悬浮问号查看游戏资料，点击“用户明细”查看该游戏的用户排行</span></div><button type="button" className="table-tool" onClick={() => setExportConfirm(true)}>⇩ 导出当前结果</button></div><div className="table-wrap game-table-wrap"><table><thead><tr><th>游戏</th><th>区域</th><th>活跃用户</th><th>游戏次数</th><th>用户投入</th><th>用户出奖</th><th>净值</th><th>返奖率</th><th>热度</th><th>操作</th></tr></thead><tbody>{loading ? <tr><td colSpan={10}><div className="loading-state"><span />正在加载报表数据…</div></td></tr> : filteredGames.length ? filteredGames.slice(0, 4).map((row) => <tr key={`${row.region}-${row.game}`}><td><GameCell name={row.game} /></td><td>{row.region}</td><td>{format.format(row.active)}</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{money(row.net)}</td><td>{row.rate.toFixed(2)}%</td><td>{row.rank}</td><td><button type="button" className="row-action" onClick={() => openGameDetails(row)}>用户明细</button></td></tr>) : <tr><td colSpan={10}><div className="empty-state"><b>未找到匹配数据</b><span>请调整区域、游戏或用户筛选条件后重试。</span><button type="button" onClick={resetOverview}>清除筛选</button></div></td></tr>}</tbody></table></div><div className="pagination"><span>共 {filteredGames.length} 条 ｜ 20 条/页</span><button className="active" type="button">1</button><button type="button" disabled>2</button></div></section>
