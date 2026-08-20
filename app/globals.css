@@ -162,7 +162,6 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .chart-legend .blue { background: var(--primary); }.chart-legend .orange { background: #f59e0b; }.chart-legend .green { background: var(--green); }
 .trend-chart { height: 185px; display: flex; margin-top: 8px; }
 .y-labels { width: 48px; display: flex; flex-direction: column; justify-content: space-between; padding: 2px 0 23px; color: var(--subtle); font-size: 9px; }
-.rate-y-labels { width: 34px; height: 150px; display: flex; flex-direction: column; justify-content: space-between; padding: 2px 0; color: var(--green); font-size: 9px; text-align: right; }
 .chart-plot { flex: 1; position: relative; overflow: hidden; }
 .chart-plot > .grid { height: 1px; position: absolute; left: 0; right: 0; background: #edf1f6; }
 .chart-plot .g1 { top: 4px; }.chart-plot .g2 { top: 39px; }.chart-plot .g3 { top: 74px; }.chart-plot .g4 { top: 109px; }
@@ -178,6 +177,16 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .rate-line polyline { fill: none; stroke: var(--green); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 .line-cell { position: relative; }
 .line-point { width: 8px; height: 8px; position: absolute; z-index: 2; left: 50%; padding: 0; border: 2px solid var(--green); border-radius: 50%; background: white; pointer-events: auto; transform: translateX(-50%); }
+
+.rate-trend-panel { height: 142px; margin-top: 16px; padding: 15px 18px; }
+.rate-trend-chart { height: 88px; display: flex; margin-top: 10px; }
+.rate-axis-labels { width: 48px; height: 64px; display: flex; flex-direction: column; justify-content: space-between; color: var(--green); font-size: 9px; }
+.rate-spark-plot { height: 88px; position: relative; flex: 1; }
+.rate-spark-grid { height: 1px; position: absolute; right: 0; left: 0; background: #e8f3ec; }.rate-spark-grid.grid-top { top: 0; }.rate-spark-grid.grid-middle { top: 32px; }.rate-spark-grid.grid-bottom { top: 64px; }
+.rate-spark-line { width: 100%; height: 64px; position: absolute; inset: 0; overflow: visible; }.rate-spark-line polyline { fill: none; stroke: var(--green); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.rate-spark-cells { height: 88px; position: absolute; inset: 0; display: grid; grid-template-columns: repeat(7, 1fr); }
+.rate-spark-cell { height: 64px; position: relative; min-width: 0; }.rate-spark-cell strong { position: absolute; z-index: 3; left: 50%; color: var(--green); font-size: 10px; white-space: nowrap; transform: translateX(-50%); }.rate-spark-cell > span { position: absolute; top: 72px; left: 50%; color: var(--subtle); font-size: 9px; transform: translateX(-50%); }
+.rate-spark-point { width: 9px; height: 9px; position: absolute; z-index: 2; left: 50%; padding: 0; border: 2px solid var(--green); border-radius: 50%; background: white; transform: translate(-50%, 50%); }
 
 .rank-list { margin-top: 17px; }
 .rank-row { display: grid; grid-template-columns: 22px 62px 74px minmax(44px, 1fr) 86px; align-items: center; gap: 8px; height: 32px; font-size: 11px; }
