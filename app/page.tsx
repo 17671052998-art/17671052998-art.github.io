@@ -70,10 +70,12 @@ const trend = [
   { date: "07/17", input: 20.7, output: 18.9, rate: 91.3 },
 ];
 
+const rateAxis = { minimum: 88, maximum: 94 };
+const ratePosition = (rate: number) => (rate - rateAxis.minimum) / (rateAxis.maximum - rateAxis.minimum) * 100;
+
 const rateLinePoints = trend.map((item, index) => {
   const x = (index + 0.5) * (700 / trend.length);
-  const bottomPercent = 42 + (item.rate - 89) * 8;
-  const y = 150 * (1 - bottomPercent / 100);
+  const y = 150 * (1 - ratePosition(item.rate) / 100);
   return `${x},${y}`;
 }).join(" ");
 
@@ -440,7 +442,7 @@ export default function Home() {
               </section>
 
               <section className="analytics-row">
-                <article className="panel trend-panel"><div className="panel-title"><h2>用户投入 / 用户出奖 / 返奖率趋势</h2><div className="chart-legend"><span><i className="blue" />用户投入</span><span><i className="orange" />用户出奖</span><span><i className="green" />返奖率</span></div></div><div className="trend-chart"><div className="y-labels"><span>20M</span><span>15M</span><span>10M</span><span>5M</span><span>0</span></div><div className="chart-plot"><i className="grid g1" /><i className="grid g2" /><i className="grid g3" /><i className="grid g4" /><div className="bar-groups">{trend.map((item) => <div className="bar-group" key={item.date}><div className="bars"><button type="button" style={{ height: `${item.input / 22 * 100}%` }} className="bar input-bar" title={`${item.date} 用户投入 ${item.input}M`} /><button type="button" style={{ height: `${item.output / 22 * 100}%` }} className="bar output-bar" title={`${item.date} 用户出奖 ${item.output}M`} /></div><span>{item.date}</span></div>)}</div><div className="line-layer"><svg className="rate-line" viewBox="0 0 700 150" preserveAspectRatio="none" aria-hidden="true"><polyline points={rateLinePoints} /></svg>{trend.map((item) => <div className="line-cell" key={item.date}><button type="button" className="line-point" style={{ bottom: `${42 + (item.rate - 89) * 8}%` }} title={`${item.date} 返奖率 ${item.rate}%`} aria-label={`${item.date} 返奖率 ${item.rate}%`} /></div>)}</div></div></div></article>
+                <article className="panel trend-panel"><div className="panel-title"><h2>用户投入 / 用户出奖 / 返奖率趋势</h2><div className="chart-legend"><span><i className="blue" />用户投入</span><span><i className="orange" />用户出奖</span><span><i className="green" />返奖率（右轴）</span></div></div><div className="trend-chart"><div className="y-labels" aria-label="金额刻度，单位为万金币"><span>2,000万</span><span>1,500万</span><span>1,000万</span><span>500万</span><span>0</span></div><div className="chart-plot"><i className="grid g1" /><i className="grid g2" /><i className="grid g3" /><i className="grid g4" /><div className="bar-groups">{trend.map((item) => <div className="bar-group" key={item.date}><div className="bars"><button type="button" style={{ height: `${item.input / 22 * 100}%` }} className="bar input-bar" title={`${item.date} 用户投入：${moneyText(item.input * 1_000_000)} 金币`} aria-label={`${item.date} 用户投入 ${moneyText(item.input * 1_000_000)} 金币`} /><button type="button" style={{ height: `${item.output / 22 * 100}%` }} className="bar output-bar" title={`${item.date} 用户出奖：${moneyText(item.output * 1_000_000)} 金币`} aria-label={`${item.date} 用户出奖 ${moneyText(item.output * 1_000_000)} 金币`} /></div><span>{item.date}</span></div>)}</div><div className="line-layer"><svg className="rate-line" viewBox="0 0 700 150" preserveAspectRatio="none" aria-hidden="true"><polyline points={rateLinePoints} /></svg>{trend.map((item) => <div className="line-cell" key={item.date}><button type="button" className="line-point" style={{ bottom: `${ratePosition(item.rate)}%` }} title={`${item.date} 返奖率：${item.rate}%`} aria-label={`${item.date} 返奖率 ${item.rate}%`} /></div>)}</div></div><div className="rate-y-labels" aria-label="返奖率刻度"><span>94%</span><span>92%</span><span>90%</span><span>88%</span></div></div></article>
                 <article className="panel ranking-panel"><div className="panel-title"><h2>游戏区域用户投入</h2><span>{game === "全部游戏" ? "按区域汇总全部游戏用户投入" : `${game} 各区域用户投入`}</span></div><div className="rank-list">{regionInvestmentStats.length ? regionInvestmentStats.map((item, index) => <div className="rank-row" key={item.region}><b className={index === 0 ? "first" : ""}>{index + 1}</b><strong>{item.region}</strong><span>{game === "全部游戏" ? "全部游戏" : game}</span><div><i style={{ width: `${item.width}%`, background: item.color }} /></div><em title={`${moneyText(item.input)} 金币`}>{money(item.input)}</em></div>) : <div className="rank-empty">暂无匹配区域数据</div>}</div></article>
               </section>
 

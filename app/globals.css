@@ -161,7 +161,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .chart-legend i { width: 7px; height: 7px; display: inline-block; border-radius: 2px; }
 .chart-legend .blue { background: var(--primary); }.chart-legend .orange { background: #f59e0b; }.chart-legend .green { background: var(--green); }
 .trend-chart { height: 185px; display: flex; margin-top: 8px; }
-.y-labels { width: 42px; display: flex; flex-direction: column; justify-content: space-between; padding: 2px 0 23px; color: var(--subtle); font-size: 9px; }
+.y-labels { width: 48px; display: flex; flex-direction: column; justify-content: space-between; padding: 2px 0 23px; color: var(--subtle); font-size: 9px; }
+.rate-y-labels { width: 34px; height: 150px; display: flex; flex-direction: column; justify-content: space-between; padding: 2px 0; color: var(--green); font-size: 9px; text-align: right; }
 .chart-plot { flex: 1; position: relative; overflow: hidden; }
 .chart-plot > .grid { height: 1px; position: absolute; left: 0; right: 0; background: #edf1f6; }
 .chart-plot .g1 { top: 4px; }.chart-plot .g2 { top: 39px; }.chart-plot .g3 { top: 74px; }.chart-plot .g4 { top: 109px; }
