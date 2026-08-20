@@ -3,7 +3,7 @@
 import { CaretDownIcon, CheckIcon, CrownIcon, DiceFiveIcon, GameControllerIcon, RocketLaunchIcon, SpinnerBallIcon, XIcon, type Icon } from "@phosphor-icons/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-type View = "overview" | "users";
+type View = "dashboard" | "overview" | "users";
 type Vendor = "热游" | "灵仙";
 type DetailPeriod = "day" | "week" | "month";
 
@@ -101,13 +101,6 @@ function buildGameUserRankings(gameName: string, period: DetailPeriod): GameUser
     };
   }).sort((a, b) => b.input - a.input);
 }
-
-const rankData = [
-  { region: "印尼", game: "Lucky Wheel", value: 32.8, color: "#409eff" },
-  { region: "菲律宾", game: "Crash", value: 24.6, color: "#7c3aed" },
-  { region: "阿拉伯", game: "Slot King", value: 19.3, color: "#f59e0b" },
-  { region: "土耳其", game: "Dice", value: 14.7, color: "#16a34a" },
-];
 
 const navItems = [
   ["⌂", "首页"], ["⚙", "系统管理"], ["◉", "用户管理"], ["◆", "充值管理"],
@@ -259,7 +252,7 @@ function GameCell({ name }: { name: string }) {
 }
 
 export default function Home() {
-  const [view, setView] = useState<View>("overview");
+  const [view, setView] = useState<View>("dashboard");
   const [region, setRegion] = useState("全部区域");
   const [game, setGame] = useState("全部游戏");
   const [userId, setUserId] = useState("");
@@ -317,6 +310,15 @@ export default function Home() {
     );
   }, [region, game, userId]);
 
+  const regionInvestmentStats = useMemo(() => {
+    const byRegion = new Map<string, number>();
+    filteredGames.forEach((row) => byRegion.set(row.region, (byRegion.get(row.region) ?? 0) + row.input));
+    const entries = [...byRegion.entries()].map(([regionName, input]) => ({ region: regionName, input })).sort((a, b) => b.input - a.input);
+    const maximum = Math.max(...entries.map((item) => item.input), 1);
+    const colors = ["#409eff", "#7c3aed", "#f59e0b", "#16a34a", "#0891b2", "#ec4899", "#6366f1", "#14b8a6", "#94a3b8"];
+    return entries.map((item, index) => ({ ...item, width: item.input / maximum * 100, color: colors[index % colors.length] }));
+  }, [filteredGames]);
+
   const filteredUsers = useMemo(() => {
     const keyword = appliedUser.keyword.trim().toLowerCase();
     const rows = users.filter((row) =>
@@ -372,14 +374,15 @@ export default function Home() {
   function performExport() {
     setExporting(true);
     setTimeout(() => {
-      const rows = view === "overview" ? filteredGames : filteredUsers;
-      const header = view === "overview" ? ["游戏", "区域", "活跃用户", "游戏次数", "用户投入", "用户出奖", "净值", "返奖率", "热度"] : ["用户ID", "昵称", "区域", "偏好游戏", "活跃天数", "游戏次数", "用户投入", "用户出奖", "净值", "返奖率", "最近游戏时间", "偏好排名"];
-      const exportRows = view === "overview"
+      const isGameView = view !== "users";
+      const rows = isGameView ? filteredGames : filteredUsers;
+      const header = isGameView ? ["游戏", "区域", "活跃用户", "游戏次数", "用户投入", "用户出奖", "净值", "返奖率", "热度"] : ["用户ID", "昵称", "区域", "偏好游戏", "活跃天数", "游戏次数", "用户投入", "用户出奖", "净值", "返奖率", "最近游戏时间", "偏好排名"];
+      const exportRows = isGameView
         ? (rows as GameRow[]).map((row) => [row.game, row.region, row.active, row.plays, row.input, row.output, row.net, row.rate, row.rank])
         : (rows as UserRow[]).map((row) => [row.id, row.nickname, row.region, row.game, row.days, row.plays, row.input, row.output, row.net, row.rate, row.latest, row.rank]);
       const body = exportRows.map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(","));
       const blob = new Blob(["\ufeff" + [header.join(","), ...body].join("\n")], { type: "text/csv;charset=utf-8" });
-      const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = view === "overview" ? "游戏数据报表.csv" : "游戏用户列表.csv"; anchor.click(); URL.revokeObjectURL(url);
+      const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = isGameView ? "游戏数据报表.csv" : "游戏用户列表.csv"; anchor.click(); URL.revokeObjectURL(url);
       setExporting(false); setExportConfirm(false); notify(`已导出 ${rows.length} 条数据`);
     }, 620);
   }
@@ -416,9 +419,9 @@ export default function Home() {
 
         <section className="page-content">
           <div className="page-title"><div><h1>游戏数据报表</h1><p>按区域、游戏或用户维度查询用户投入、用户出奖、返奖率与净值。</p></div><button type="button" className="refresh-link" onClick={() => simulateQuery("数据刷新完成")}>↻ 刷新数据</button></div>
-          <div className="business-tabs" role="tablist"><button role="tab" aria-selected={view === "overview"} className={view === "overview" ? "active" : ""} onClick={() => switchView("overview")}>总览报表</button><button role="tab" aria-selected={view === "users"} className={view === "users" ? "active" : ""} onClick={() => switchView("users")}>游戏用户列表</button></div>
+          <div className="business-tabs" role="tablist"><button role="tab" aria-selected={view === "dashboard"} className={view === "dashboard" ? "active" : ""} onClick={() => switchView("dashboard")}>游戏总览</button><button role="tab" aria-selected={view === "overview"} className={view === "overview" ? "active" : ""} onClick={() => switchView("overview")}>游戏统计列表</button><button role="tab" aria-selected={view === "users"} className={view === "users" ? "active" : ""} onClick={() => switchView("users")}>游戏用户列表</button></div>
 
-          {view === "overview" ? (
+          {view !== "users" ? (
             <>
               <section className="panel filter-panel overview-filters">
                 <FilterField label="区域"><select value={region} onChange={(event) => setRegion(event.target.value)}><option>全部区域</option>{regions.map((item) => <option key={item}>{item}</option>)}</select></FilterField>
@@ -429,6 +432,7 @@ export default function Home() {
                 <span className="update-time">数据更新时间：10:30</span>
               </section>
 
+              {view === "dashboard" && <>
               <section className="overview-metrics">
                 <MetricCard mark="活" title="活跃游戏用户" value="86,420" note="较上周期 +12.6%" tone="blue" />
                 <MetricCard mark="投" title="用户投入" value={<Money value={16_480_200} />} valueTitle={`完整金额：${moneyText(16_480_200)} 金币`} valueHint={amountUnitText(16_480_200)} note="用户实际投入金额" tone="amber" />
@@ -439,10 +443,11 @@ export default function Home() {
 
               <section className="analytics-row">
                 <article className="panel trend-panel"><div className="panel-title"><h2>用户投入 / 用户出奖 / 返奖率趋势</h2><div className="chart-legend"><span><i className="blue" />用户投入</span><span><i className="orange" />用户出奖</span><span><i className="green" />返奖率</span></div></div><div className="trend-chart"><div className="y-labels"><span>20M</span><span>15M</span><span>10M</span><span>5M</span><span>0</span></div><div className="chart-plot"><i className="grid g1" /><i className="grid g2" /><i className="grid g3" /><i className="grid g4" /><div className="bar-groups">{trend.map((item) => <div className="bar-group" key={item.date}><div className="bars"><button type="button" style={{ height: `${item.input / 22 * 100}%` }} className="bar input-bar" title={`${item.date} 用户投入 ${item.input}M`} /><button type="button" style={{ height: `${item.output / 22 * 100}%` }} className="bar output-bar" title={`${item.date} 用户出奖 ${item.output}M`} /></div><span>{item.date}</span></div>)}</div><div className="line-layer"><svg className="rate-line" viewBox="0 0 700 150" preserveAspectRatio="none" aria-hidden="true"><polyline points={rateLinePoints} /></svg>{trend.map((item) => <div className="line-cell" key={item.date}><button type="button" className="line-point" style={{ bottom: `${42 + (item.rate - 89) * 8}%` }} title={`${item.date} 返奖率 ${item.rate}%`} aria-label={`${item.date} 返奖率 ${item.rate}%`} /></div>)}</div></div></div></article>
-                <article className="panel ranking-panel"><div className="panel-title"><h2>游戏区域统计</h2><span>按活跃用户 + 游戏次数综合排序</span></div><div className="rank-list">{rankData.map((item, index) => <div className="rank-row" key={item.region}><b className={index === 0 ? "first" : ""}>{index + 1}</b><strong>{item.region}</strong><span>{item.game}</span><div><i style={{ width: `${item.value / 35 * 100}%`, background: item.color }} /></div><em>{item.value}%</em></div>)}</div></article>
+                <article className="panel ranking-panel"><div className="panel-title"><h2>游戏区域用户投入</h2><span>{game === "全部游戏" ? "按区域汇总全部游戏用户投入" : `${game} 各区域用户投入`}</span></div><div className="rank-list">{regionInvestmentStats.length ? regionInvestmentStats.map((item, index) => <div className="rank-row" key={item.region}><b className={index === 0 ? "first" : ""}>{index + 1}</b><strong>{item.region}</strong><span>{game === "全部游戏" ? "全部游戏" : game}</span><div><i style={{ width: `${item.width}%`, background: item.color }} /></div><em title={`${moneyText(item.input)} 金币`}>{money(item.input)}</em></div>) : <div className="rank-empty">暂无匹配区域数据</div>}</div></article>
               </section>
+              </>}
 
-              <section className="panel table-panel"><div className="table-heading"><div><h2>游戏汇总数据</h2><span>悬浮问号查看游戏资料，点击“用户明细”查看该游戏的用户排行</span></div><button type="button" className="table-tool" onClick={() => setExportConfirm(true)}>⇩ 导出当前结果</button></div><div className="table-wrap game-table-wrap"><table><thead><tr><th>游戏</th><th>区域</th><th>活跃用户</th><th>游戏次数</th><th>用户投入</th><th>用户出奖</th><th>净值</th><th>返奖率</th><th>热度</th><th>操作</th></tr></thead><tbody>{loading ? <tr><td colSpan={10}><div className="loading-state"><span />正在加载报表数据…</div></td></tr> : filteredGames.length ? filteredGames.slice(0, 4).map((row) => <tr key={`${row.region}-${row.game}`}><td><GameCell name={row.game} /></td><td>{row.region}</td><td>{format.format(row.active)}</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{money(row.net)}</td><td>{row.rate.toFixed(2)}%</td><td>{row.rank}</td><td><button type="button" className="row-action" onClick={() => openGameDetails(row)}>用户明细</button></td></tr>) : <tr><td colSpan={10}><div className="empty-state"><b>未找到匹配数据</b><span>请调整区域、游戏或用户筛选条件后重试。</span><button type="button" onClick={resetOverview}>清除筛选</button></div></td></tr>}</tbody></table></div><div className="pagination"><span>共 {filteredGames.length} 条 ｜ 20 条/页</span><button className="active" type="button">1</button><button type="button" disabled>2</button></div></section>
+              {view === "overview" && <section className="panel table-panel"><div className="table-heading"><div><h2>游戏统计列表</h2><span>悬浮问号查看游戏资料，点击“用户明细”查看该游戏的用户排行</span></div><button type="button" className="table-tool" onClick={() => setExportConfirm(true)}>⇩ 导出当前结果</button></div><div className="table-wrap game-table-wrap"><table><thead><tr><th>游戏</th><th>区域</th><th>活跃用户</th><th>游戏次数</th><th>用户投入</th><th>用户出奖</th><th>净值</th><th>返奖率</th><th>热度</th><th>操作</th></tr></thead><tbody>{loading ? <tr><td colSpan={10}><div className="loading-state"><span />正在加载报表数据…</div></td></tr> : filteredGames.length ? filteredGames.slice(0, 4).map((row) => <tr key={`${row.region}-${row.game}`}><td><GameCell name={row.game} /></td><td>{row.region}</td><td>{format.format(row.active)}</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{money(row.net)}</td><td>{row.rate.toFixed(2)}%</td><td>{row.rank}</td><td><button type="button" className="row-action" onClick={() => openGameDetails(row)}>用户明细</button></td></tr>) : <tr><td colSpan={10}><div className="empty-state"><b>未找到匹配数据</b><span>请调整区域、游戏或用户筛选条件后重试。</span><button type="button" onClick={resetOverview}>清除筛选</button></div></td></tr>}</tbody></table></div><div className="pagination"><span>共 {filteredGames.length} 条 ｜ 20 条/页</span><button className="active" type="button">1</button><button type="button" disabled>2</button></div></section>}
             </>
           ) : (
             <>
@@ -506,7 +511,7 @@ export default function Home() {
         </div>
       )}
 
-      {exportConfirm && <div className="modal-layer"><button className="modal-backdrop" type="button" aria-label="关闭导出确认" onClick={() => !exporting && setExportConfirm(false)} /><section className="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="export-title"><span className="confirm-icon">⇩</span><h2 id="export-title">确认导出数据？</h2><p>将按当前筛选条件导出 {view === "overview" ? filteredGames.length : filteredUsers.length} 条{view === "overview" ? "游戏汇总" : "用户明细"}数据，文件格式为 CSV。</p><div><button type="button" disabled={exporting} onClick={() => setExportConfirm(false)}>取消</button><button type="button" className="success" disabled={exporting} onClick={performExport}>{exporting ? "生成中…" : "确认导出"}</button></div></section></div>}
+      {exportConfirm && <div className="modal-layer"><button className="modal-backdrop" type="button" aria-label="关闭导出确认" onClick={() => !exporting && setExportConfirm(false)} /><section className="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="export-title"><span className="confirm-icon">⇩</span><h2 id="export-title">确认导出数据？</h2><p>将按当前筛选条件导出 {view !== "users" ? filteredGames.length : filteredUsers.length} 条{view !== "users" ? "游戏统计" : "用户明细"}数据，文件格式为 CSV。</p><div><button type="button" disabled={exporting} onClick={() => setExportConfirm(false)}>取消</button><button type="button" className="success" disabled={exporting} onClick={performExport}>{exporting ? "生成中…" : "确认导出"}</button></div></section></div>}
       <div className={`toast ${toast ? "show" : ""}`} role="status" aria-live="polite"><span>✓</span>{toast}</div>
     </main>
   );
