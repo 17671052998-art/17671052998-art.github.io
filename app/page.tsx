@@ -60,25 +60,6 @@ const users: UserRow[] = [
   { id: "827049", nickname: "Jose", region: "菲律宾", game: "Lucky Wheel", days: 3, plays: 72, input: 3210, output: 3050, net: 160, rate: 95.02, latest: "2026-07-16 20:05", rank: "Top 5" },
 ];
 
-const trend = [
-  { date: "07/11", input: 14.2, output: 12.8, rate: 90.1 },
-  { date: "07/12", input: 16.1, output: 14.5, rate: 90.8 },
-  { date: "07/13", input: 15.0, output: 13.4, rate: 89.7 },
-  { date: "07/14", input: 17.0, output: 15.6, rate: 91.4 },
-  { date: "07/15", input: 17.8, output: 16.2, rate: 91.1 },
-  { date: "07/16", input: 19.3, output: 17.4, rate: 91.8 },
-  { date: "07/17", input: 20.7, output: 18.9, rate: 91.3 },
-];
-
-const rateAxis = { minimum: 88, maximum: 94 };
-const ratePosition = (rate: number) => (rate - rateAxis.minimum) / (rateAxis.maximum - rateAxis.minimum) * 100;
-
-const rateSparkLinePoints = trend.map((item, index) => {
-  const x = (index + 0.5) * (700 / trend.length);
-  const y = 64 * (1 - ratePosition(item.rate) / 100);
-  return `${x},${y}`;
-}).join(" ");
-
 const detailPeriodConfig: Record<DetailPeriod, { label: string; scope: string; scale: number }> = {
   day: { label: "按日", scope: "2026-07-17", scale: 0.12 },
   week: { label: "按周", scope: "2026-07-13 至 2026-07-19", scale: 0.56 },
@@ -313,12 +294,12 @@ export default function Home() {
   }, [region, game, userId]);
 
   const regionInvestmentStats = useMemo(() => {
-    const byRegion = new Map<string, number>();
-    filteredGames.forEach((row) => byRegion.set(row.region, (byRegion.get(row.region) ?? 0) + row.input));
-    const entries = [...byRegion.entries()].map(([regionName, input]) => ({ region: regionName, input })).sort((a, b) => b.input - a.input);
-    const maximum = Math.max(...entries.map((item) => item.input), 1);
-    const colors = ["#409eff", "#7c3aed", "#f59e0b", "#16a34a", "#0891b2", "#ec4899", "#6366f1", "#14b8a6", "#94a3b8"];
-    return entries.map((item, index) => ({ ...item, width: item.input / maximum * 100, color: colors[index % colors.length] }));
+    const byRegion = new Map<string, { input: number; output: number }>();
+    filteredGames.forEach((row) => {
+      const current = byRegion.get(row.region) ?? { input: 0, output: 0 };
+      byRegion.set(row.region, { input: current.input + row.input, output: current.output + row.output });
+    });
+    return [...byRegion.entries()].map(([regionName, values]) => ({ region: regionName, ...values })).sort((a, b) => b.input - a.input);
   }, [filteredGames]);
 
   const filteredUsers = useMemo(() => {
@@ -442,11 +423,8 @@ export default function Home() {
               </section>
 
               <section className="analytics-row">
-                <article className="panel trend-panel"><div className="panel-title"><h2>用户投入 / 用户出奖趋势</h2><div className="chart-legend"><span><i className="blue" />用户投入</span><span><i className="orange" />用户出奖</span></div></div><div className="trend-chart"><div className="y-labels" aria-label="金额刻度，单位为万金币"><span>2,000万</span><span>1,500万</span><span>1,000万</span><span>500万</span><span>0</span></div><div className="chart-plot"><i className="grid g1" /><i className="grid g2" /><i className="grid g3" /><i className="grid g4" /><div className="bar-groups">{trend.map((item) => <div className="bar-group" key={item.date}><div className="bars"><button type="button" style={{ height: `${item.input / 22 * 100}%` }} className="bar input-bar" title={`${item.date} 用户投入：${moneyText(item.input * 1_000_000)} 金币`} aria-label={`${item.date} 用户投入 ${moneyText(item.input * 1_000_000)} 金币`} /><button type="button" style={{ height: `${item.output / 22 * 100}%` }} className="bar output-bar" title={`${item.date} 用户出奖：${moneyText(item.output * 1_000_000)} 金币`} aria-label={`${item.date} 用户出奖 ${moneyText(item.output * 1_000_000)} 金币`} /></div><span>{item.date}</span></div>)}</div></div></div></article>
-                <article className="panel ranking-panel"><div className="panel-title"><h2>游戏区域用户投入</h2><span>{game === "全部游戏" ? "按区域汇总全部游戏用户投入" : `${game} 各区域用户投入`}</span></div><div className="rank-list">{regionInvestmentStats.length ? regionInvestmentStats.map((item, index) => <div className="rank-row" key={item.region}><b className={index === 0 ? "first" : ""}>{index + 1}</b><strong>{item.region}</strong><span>{game === "全部游戏" ? "全部游戏" : game}</span><div><i style={{ width: `${item.width}%`, background: item.color }} /></div><em title={`${moneyText(item.input)} 金币`}>{money(item.input)}</em></div>) : <div className="rank-empty">暂无匹配区域数据</div>}</div></article>
+                <article className="panel regional-statistics-panel"><div className="panel-title"><h2>游戏区域资金统计</h2><span>{game === "全部游戏" ? "按区域汇总全部游戏的用户投入与用户出奖" : `${game} 各区域用户投入与用户出奖`}</span></div><div className="region-stat-head" aria-hidden="true"><span>排名</span><span>区域</span><span>游戏</span><span>用户投入</span><span>用户出奖</span></div><div className="region-stat-list">{regionInvestmentStats.length ? regionInvestmentStats.map((item, index) => <div className="region-stat-row" key={item.region}><b className={index === 0 ? "first" : ""}>{index + 1}</b><strong>{item.region}</strong><span>{game === "全部游戏" ? "全部游戏" : game}</span><em title={`${moneyText(item.input)} 金币`}>{money(item.input)}</em><em title={`${moneyText(item.output)} 金币`}>{money(item.output)}</em></div>) : <div className="region-stat-empty">暂无匹配区域数据</div>}</div></article>
               </section>
-
-              <article className="panel rate-trend-panel"><div className="panel-title"><h2>返奖率趋势</h2><span>返奖率 = 用户出奖 ÷ 用户投入</span></div><div className="rate-trend-chart"><div className="rate-axis-labels" aria-label="返奖率刻度"><span>94%</span><span>92%</span><span>90%</span><span>88%</span></div><div className="rate-spark-plot"><i className="rate-spark-grid grid-top" /><i className="rate-spark-grid grid-middle" /><i className="rate-spark-grid grid-bottom" /><svg className="rate-spark-line" viewBox="0 0 700 64" preserveAspectRatio="none" aria-hidden="true"><polyline points={rateSparkLinePoints} /></svg><div className="rate-spark-cells">{trend.map((item) => <div className="rate-spark-cell" key={item.date}><strong style={{ bottom: `${ratePosition(item.rate) * .64 + 9}px` }}>{item.rate.toFixed(1)}%</strong><button type="button" className="rate-spark-point" style={{ bottom: `${ratePosition(item.rate)}%` }} title={`${item.date} 返奖率：${item.rate}%`} aria-label={`${item.date} 返奖率 ${item.rate}%`} /><span>{item.date}</span></div>)}</div></div></div></article>
 
               <section className="panel table-panel"><div className="table-heading"><div><h2>游戏汇总数据</h2><span>悬浮问号查看游戏资料，点击“用户明细”查看该游戏的用户排行</span></div><button type="button" className="table-tool" onClick={() => setExportConfirm(true)}>⇩ 导出当前结果</button></div><div className="table-wrap game-table-wrap"><table><thead><tr><th>游戏</th><th>区域</th><th>活跃用户</th><th>游戏次数</th><th>用户投入</th><th>用户出奖</th><th>净值</th><th>返奖率</th><th>热度</th><th>操作</th></tr></thead><tbody>{loading ? <tr><td colSpan={10}><div className="loading-state"><span />正在加载报表数据…</div></td></tr> : filteredGames.length ? filteredGames.slice(0, 4).map((row) => <tr key={`${row.region}-${row.game}`}><td><GameCell name={row.game} /></td><td>{row.region}</td><td>{format.format(row.active)}</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{money(row.net)}</td><td>{row.rate.toFixed(2)}%</td><td>{row.rank}</td><td><button type="button" className="row-action" onClick={() => openGameDetails(row)}>用户明细</button></td></tr>) : <tr><td colSpan={10}><div className="empty-state"><b>未找到匹配数据</b><span>请调整区域、游戏或用户筛选条件后重试。</span><button type="button" onClick={resetOverview}>清除筛选</button></div></td></tr>}</tbody></table></div><div className="pagination"><span>共 {filteredGames.length} 条 ｜ 20 条/页</span><button className="active" type="button">1</button><button type="button" disabled>2</button></div></section>
             </>
