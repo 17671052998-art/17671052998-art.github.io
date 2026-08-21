@@ -5,7 +5,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 type View = "overview" | "users";
 type Vendor = "热游" | "灵仙";
-type DetailPeriod = "day" | "week" | "month";
+
+type DetailMetricFilters = {
+  playsMin: string; playsMax: string; inputMin: string; inputMax: string;
+  outputMin: string; outputMax: string; netMin: string; netMax: string;
+  rateMin: string; rateMax: string;
+};
 
 type GameRow = {
   game: string; region: string; active: number; plays: number;
@@ -71,23 +76,20 @@ const users: UserRow[] = [
   { id: "827049", nickname: "Jose", region: "菲律宾", game: "Lucky Wheel", days: 3, plays: 72, input: 3210, output: 3050, net: 160, rate: 95.02, latest: "2026-07-16 20:05", rank: "Top 5" },
 ];
 
-const detailPeriodConfig: Record<DetailPeriod, { label: string; scope: string; scale: number }> = {
-  day: { label: "按日", scope: "2026-07-17", scale: 0.12 },
-  week: { label: "按周", scope: "2026-07-13 至 2026-07-19", scale: 0.56 },
-  month: { label: "按月", scope: "2026-07-01 至 2026-07-31", scale: 1.75 },
-};
+const emptyDetailMetricFilters = (): DetailMetricFilters => ({ playsMin: "", playsMax: "", inputMin: "", inputMax: "", outputMin: "", outputMax: "", netMin: "", netMax: "", rateMin: "", rateMax: "" });
+const inNumberRange = (value: number, minimum: string, maximum: string) => (minimum === "" || value >= Number(minimum)) && (maximum === "" || value <= Number(maximum));
 
-function buildGameUserRankings(gameName: string, period: DetailPeriod): GameUserRanking[] {
-  const config = detailPeriodConfig[period];
+function buildGameUserRankings(gameName: string): GameUserRanking[] {
+  const scale = 0.12;
   return users.filter((user) => user.game === gameName).map((user) => {
-    const input = Math.max(1, Math.round(user.input * config.scale));
+    const input = Math.max(1, Math.round(user.input * scale));
     const rate = user.rate;
     const output = Math.round(input * rate / 100);
     return {
       id: user.id,
       nickname: user.nickname,
       region: user.region,
-      plays: Math.max(1, Math.round(user.plays * config.scale)),
+      plays: Math.max(1, Math.round(user.plays * scale)),
       input,
       output,
       net: input - output,
@@ -315,8 +317,7 @@ export default function Home() {
   const [exportConfirm, setExportConfirm] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [detailGame, setDetailGame] = useState<GameRow | null>(null);
-  const [detailPeriod, setDetailPeriod] = useState<DetailPeriod>("day");
-  const [detailRegion, setDetailRegion] = useState("全部区域");
+  const [detailMetricFilters, setDetailMetricFilters] = useState<DetailMetricFilters>(emptyDetailMetricFilters);
   const [profileUser, setProfileUser] = useState<UserRow | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const detailCloseRef = useRef<HTMLButtonElement | null>(null);
@@ -394,7 +395,13 @@ export default function Home() {
   const pageSize = 8;
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
   const visibleUsers = filteredUsers.slice((page - 1) * pageSize, page * pageSize);
-  const detailRankings = useMemo(() => detailGame ? buildGameUserRankings(detailGame.game, detailPeriod).filter((row) => detailRegion === "全部区域" || row.region === detailRegion) : [], [detailGame, detailPeriod, detailRegion]);
+  const detailRankings = useMemo(() => detailGame ? buildGameUserRankings(detailGame.game).filter((row) =>
+    inNumberRange(row.plays, detailMetricFilters.playsMin, detailMetricFilters.playsMax) &&
+    inNumberRange(row.input, detailMetricFilters.inputMin, detailMetricFilters.inputMax) &&
+    inNumberRange(row.output, detailMetricFilters.outputMin, detailMetricFilters.outputMax) &&
+    inNumberRange(row.net, detailMetricFilters.netMin, detailMetricFilters.netMax) &&
+    inNumberRange(row.rate, detailMetricFilters.rateMin, detailMetricFilters.rateMax)
+  ) : [], [detailGame, detailMetricFilters]);
   const detailTotals = useMemo(() => {
     const totals = detailRankings.reduce((sum, row) => ({
       plays: sum.plays + row.plays,
@@ -406,7 +413,6 @@ export default function Home() {
   }, [detailRankings]);
   const detailGameMeta = detailGame ? gameCatalog[detailGame.game] : undefined;
   const DetailGameIcon = detailGameMeta?.icon ?? GameControllerIcon;
-  const activeDetailConfig = detailPeriodConfig[detailPeriod];
 
   function switchView(next: View) {
     setView(next); setPage(1);
@@ -428,9 +434,12 @@ export default function Home() {
   }
 
   function openGameDetails(gameRow: GameRow) {
-    setDetailPeriod("day");
-    setDetailRegion("全部区域");
+    setDetailMetricFilters(emptyDetailMetricFilters());
     setDetailGame(gameRow);
+  }
+
+  function updateDetailMetricFilter(key: keyof DetailMetricFilters, value: string) {
+    setDetailMetricFilters((current) => ({ ...current, [key]: value }));
   }
 
   function performExport() {
@@ -533,19 +542,22 @@ export default function Home() {
             <header className="game-detail-head">
               <div className="game-detail-identity">
                 <span className="game-detail-avatar" style={{ color: detailGameMeta.color, background: `${detailGameMeta.color}18` }}><DetailGameIcon size={28} weight="duotone" aria-hidden="true" /></span>
-                <div><h2 id="game-detail-title">{detailGame.game} 用户游戏排行</h2><p>{detailGameMeta.id} · {detailGameMeta.vendor} · {detailRegion}</p></div>
+                <div><h2 id="game-detail-title">{detailGame.game} 用户游戏排行</h2><p>{detailGameMeta.id} · {detailGameMeta.vendor}</p></div>
               </div>
               <button ref={detailCloseRef} type="button" className="game-detail-close" aria-label="关闭游戏用户明细" onClick={() => setDetailGame(null)}><XIcon size={18} weight="bold" aria-hidden="true" /></button>
             </header>
 
             <div className="game-detail-toolbar">
-              <div className="game-detail-controls">
-                <div className="detail-period-tabs" role="tablist" aria-label="统计维度">
-                  {(Object.keys(detailPeriodConfig) as DetailPeriod[]).map((period) => <button key={period} type="button" role="tab" aria-selected={detailPeriod === period} className={detailPeriod === period ? "active" : ""} onClick={() => setDetailPeriod(period)}>{detailPeriodConfig[period].label}</button>)}
-                </div>
-                <label className="game-detail-region-filter"><span>区域</span><select aria-label="区域筛选" value={detailRegion} onChange={(event) => setDetailRegion(event.target.value)}><option>全部区域</option>{regions.map((item) => <option key={item}>{item}</option>)}</select></label>
+              <div className="game-detail-metric-filters" role="group" aria-label="排行数据筛选">
+                <span className="detail-filter-label">数据筛选</span>
+                <label><span>游戏下注次数</span><i><input type="number" inputMode="numeric" placeholder="最小" value={detailMetricFilters.playsMin} onChange={(event) => updateDetailMetricFilter("playsMin", event.target.value)} /><em>—</em><input type="number" inputMode="numeric" placeholder="最大" value={detailMetricFilters.playsMax} onChange={(event) => updateDetailMetricFilter("playsMax", event.target.value)} /></i></label>
+                <label><span>用户投入</span><i><input type="number" inputMode="numeric" placeholder="最小" value={detailMetricFilters.inputMin} onChange={(event) => updateDetailMetricFilter("inputMin", event.target.value)} /><em>—</em><input type="number" inputMode="numeric" placeholder="最大" value={detailMetricFilters.inputMax} onChange={(event) => updateDetailMetricFilter("inputMax", event.target.value)} /></i></label>
+                <label><span>用户出奖</span><i><input type="number" inputMode="numeric" placeholder="最小" value={detailMetricFilters.outputMin} onChange={(event) => updateDetailMetricFilter("outputMin", event.target.value)} /><em>—</em><input type="number" inputMode="numeric" placeholder="最大" value={detailMetricFilters.outputMax} onChange={(event) => updateDetailMetricFilter("outputMax", event.target.value)} /></i></label>
+                <label><span>净值</span><i><input type="number" inputMode="numeric" placeholder="最小" value={detailMetricFilters.netMin} onChange={(event) => updateDetailMetricFilter("netMin", event.target.value)} /><em>—</em><input type="number" inputMode="numeric" placeholder="最大" value={detailMetricFilters.netMax} onChange={(event) => updateDetailMetricFilter("netMax", event.target.value)} /></i></label>
+                <label><span>返奖率 (%)</span><i><input type="number" inputMode="decimal" placeholder="最小" value={detailMetricFilters.rateMin} onChange={(event) => updateDetailMetricFilter("rateMin", event.target.value)} /><em>—</em><input type="number" inputMode="decimal" placeholder="最大" value={detailMetricFilters.rateMax} onChange={(event) => updateDetailMetricFilter("rateMax", event.target.value)} /></i></label>
+                <button type="button" onClick={() => setDetailMetricFilters(emptyDetailMetricFilters())}>重置</button>
               </div>
-              <div className="game-detail-scope" id="game-detail-scope"><span>统计范围：{activeDetailConfig.scope}</span><small>共 {detailRankings.length} 位用户 · 按用户投入降序</small></div>
+              <div className="game-detail-scope" id="game-detail-scope"><span>统计日期：2026-07-17</span><small>共 {detailRankings.length} 位用户 · 按用户投入降序</small></div>
             </div>
 
             <div className="game-detail-metrics">
@@ -559,7 +571,7 @@ export default function Home() {
             <div className="game-detail-table-wrap">
               <table className="game-detail-table">
                 <thead><tr><th>用户信息</th><th>游戏下注次数</th><th>用户投入</th><th>用户出奖</th><th>净值</th><th>返奖率</th></tr></thead>
-                <tbody>{detailRankings.length ? detailRankings.map((row, index) => <tr key={row.id}><td><div className="game-detail-user"><span className={`game-detail-rank rank-${index + 1}`}>{index + 1}</span><span className="game-detail-user-avatar">{row.nickname.slice(0, 1).toUpperCase()}</span><span className="game-detail-user-copy"><strong>{row.nickname}</strong><small>ID {row.id} · {row.region}</small></span></div></td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{money(row.net)}</td><td className={row.rate >= 95 ? "rate-good" : ""}>{row.rate.toFixed(2)}%</td></tr>) : <tr><td colSpan={6}><div className="game-detail-empty"><b>暂无用户数据</b><span>{detailGame.game} 在“{detailRegion}”暂无用户记录</span></div></td></tr>}</tbody>
+                <tbody>{detailRankings.length ? detailRankings.map((row, index) => <tr key={row.id}><td><div className="game-detail-user"><span className={`game-detail-rank rank-${index + 1}`}>{index + 1}</span><span className="game-detail-user-avatar">{row.nickname.slice(0, 1).toUpperCase()}</span><span className="game-detail-user-copy"><strong>{row.nickname}</strong><small>ID {row.id} · {row.region}</small></span></div></td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{money(row.net)}</td><td className={row.rate >= 95 ? "rate-good" : ""}>{row.rate.toFixed(2)}%</td></tr>) : <tr><td colSpan={6}><div className="game-detail-empty"><b>暂无符合条件的用户</b><span>请调整数值区间后重试</span></div></td></tr>}</tbody>
               </table>
             </div>
 
