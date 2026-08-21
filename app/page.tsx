@@ -254,6 +254,48 @@ function GameCell({ name }: { name: string }) {
   );
 }
 
+function UserProfileModal({ user, onClose, closeRef }: { user: UserRow; onClose: () => void; closeRef: React.RefObject<HTMLButtonElement | null> }) {
+  const gameMeta = gameCatalog[user.game];
+  const GameIcon = gameMeta?.icon ?? GameControllerIcon;
+  const dimensions = [
+    { label: "活跃度", value: Math.min(100, Math.round(user.days / 14 * 100)), detail: `${user.days} 天` },
+    { label: "游戏频次", value: Math.min(100, Math.round(user.plays / 400 * 100)), detail: `${format.format(user.plays)} 次` },
+    { label: "返奖表现", value: Math.round(user.rate), detail: `${user.rate.toFixed(2)}%` },
+  ];
+  const point = (value: number, index: number) => {
+    const angle = -Math.PI / 2 + index * Math.PI * 2 / dimensions.length;
+    const radius = 61 * value / 100;
+    return `${100 + Math.cos(angle) * radius},${100 + Math.sin(angle) * radius}`;
+  };
+  const radarPoints = dimensions.map((dimension, index) => point(dimension.value, index)).join(" ");
+
+  return (
+    <div className="modal-layer user-profile-layer">
+      <button className="modal-backdrop" type="button" aria-label="关闭用户画像" onClick={onClose} />
+      <section className="user-profile-modal" role="dialog" aria-modal="true" aria-labelledby="user-profile-title">
+        <header className="user-profile-head">
+          <div className="user-profile-identity"><span>{user.nickname.slice(0, 1).toUpperCase()}</span><div><h2 id="user-profile-title">{user.nickname} 用户画像</h2><p>ID {user.id} · {user.region}</p></div></div>
+          <button ref={closeRef} type="button" className="game-detail-close" aria-label="关闭用户画像" onClick={onClose}><XIcon size={18} weight="bold" aria-hidden="true" /></button>
+        </header>
+
+        <div className="user-profile-content">
+          <section className="profile-key-data" aria-label="用户偏好信息">
+            <article><span>偏好游戏</span><div className="profile-game"><i style={{ color: gameMeta?.color, background: `${gameMeta?.color ?? "#667085"}18` }}><GameIcon size={19} weight="duotone" aria-hidden="true" /></i><strong>{user.game}</strong></div></article>
+            <article><span>偏好排名</span><div><b className={`rank-tag ${user.rank.replace(" ", "-").toLowerCase()}`}>{user.rank}</b></div></article>
+            <article><span>最近游戏时间</span><strong>{user.latest}</strong></article>
+          </section>
+
+          <div className="profile-charts">
+            <article className="profile-chart-card"><div className="profile-chart-title"><h3>游戏行为画像</h3><span>按当前统计周期</span></div><div className="profile-radar-wrap"><svg className="profile-radar" viewBox="0 0 200 200" role="img" aria-label="活跃度、游戏频次和返奖表现雷达图"><polygon points="100,39 47,130.5 153,130.5" /><polygon points="100,69.5 73.5,115.25 126.5,115.25" /><line x1="100" y1="39" x2="100" y2="161" /><line x1="47" y1="130.5" x2="153" y2="130.5" /><line x1="47" y1="130.5" x2="100" y2="39" /><line x1="153" y1="130.5" x2="100" y2="39" /><polygon className="profile-radar-area" points={radarPoints} />{dimensions.map((dimension, index) => { const [x, y] = point(dimension.value, index).split(","); return <circle key={dimension.label} cx={x} cy={y} r="4" />; })}</svg><div className="profile-radar-labels">{dimensions.map((dimension) => <span key={dimension.label}><b>{dimension.label}</b><small>{dimension.detail}</small></span>)}</div></div></article>
+            <article className="profile-chart-card"><div className="profile-chart-title"><h3>投入与出奖对比</h3><span>返奖率 {user.rate.toFixed(2)}%</span></div><div className="profile-fund-bars"><div><span>用户投入</span><b><Money value={user.input} /></b><i><em className="input" style={{ width: "100%" }} /></i></div><div><span>用户出奖</span><b><Money value={user.output} /></b><i><em className="output" style={{ width: `${user.rate}%` }} /></i></div><div className="profile-net"><span>净值</span><strong><Money value={user.net} /></strong><small>用户投入 − 用户出奖</small></div></div></article>
+          </div>
+        </div>
+        <footer className="user-profile-footer"><span>画像数据基于当前用户的游戏明细统计。</span><button type="button" onClick={onClose}>关闭</button></footer>
+      </section>
+    </div>
+  );
+}
+
 export default function Home() {
   const [view, setView] = useState<View>("overview");
   const [region, setRegion] = useState("全部区域");
@@ -275,8 +317,10 @@ export default function Home() {
   const [detailGame, setDetailGame] = useState<GameRow | null>(null);
   const [detailPeriod, setDetailPeriod] = useState<DetailPeriod>("day");
   const [detailRegion, setDetailRegion] = useState("全部区域");
+  const [profileUser, setProfileUser] = useState<UserRow | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const detailCloseRef = useRef<HTMLButtonElement | null>(null);
+  const profileCloseRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     if (!detailGame) return;
@@ -292,6 +336,21 @@ export default function Home() {
       document.removeEventListener("keydown", closeOnEscape);
     };
   }, [detailGame]);
+
+  useEffect(() => {
+    if (!profileUser) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    requestAnimationFrame(() => profileCloseRef.current?.focus());
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setProfileUser(null);
+    }
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [profileUser]);
 
   function notify(message: string) {
     setToast(message);
@@ -461,7 +520,7 @@ export default function Home() {
 
               <section className="user-metrics"><MetricCard mark="查" title="查询用户数" value={format.format(filteredUsers.length ? 86420 : 0)} note="当前筛选条件下用户数" tone="blue" /><MetricCard mark="高" title="高频游戏用户" value="12,680" note="近7日游戏 ≥ 35次" tone="violet" /><MetricCard mark="人" title="人均用户投入" value={<Money value={190.70} />} note="总用户投入 ÷ 投入用户数" tone="amber" /><MetricCard mark="返" title="平均返奖率" value="89.64%" note="用户出奖 ÷ 用户投入" tone="green" /></section>
 
-              <section className="panel table-panel user-table-panel"><div className="table-heading"><div><h2>游戏用户明细</h2><span>用于查询单个用户的游戏偏好、用户投入、用户出奖、净值与返奖率表现。</span></div></div><div className="table-wrap"><table><thead><tr><th>用户ID</th><th>昵称</th><th>区域</th><th>偏好游戏</th><th>活跃天数</th><th>游戏次数</th><th>用户投入</th><th>用户出奖</th><th>净值</th><th>返奖率</th><th>最近游戏时间</th><th>偏好排名</th></tr></thead><tbody>{loading ? <tr><td colSpan={12}><div className="loading-state"><span />正在加载用户数据…</div></td></tr> : visibleUsers.length ? visibleUsers.map((row) => <tr key={row.id}><td><b>{row.id}</b></td><td>{row.nickname}</td><td>{row.region}</td><td><button type="button" className="text-link" onClick={() => { setUserGame(row.game); notify(`已选择 ${row.game}`); }}>{row.game}</button></td><td>{row.days}天</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{money(row.net)}</td><td className={row.rate >= 95 ? "rate-good" : ""}>{row.rate.toFixed(2)}%</td><td>{row.latest}</td><td><span className={`rank-tag ${row.rank.replace(" ", "-").toLowerCase()}`}>{row.rank}</span></td></tr>) : <tr><td colSpan={12}><div className="empty-state"><b>未找到匹配用户</b><span>请检查用户 ID、区域或游戏条件。</span><button type="button" onClick={resetUsers}>清除筛选</button></div></td></tr>}</tbody></table></div><div className="table-footer"><span>净值 = 用户投入 - 用户出奖；返奖率 = 用户出奖 ÷ 用户投入 × 100%。</span><div className="pagination"><span>共 {format.format(filteredUsers.length)} 条 ｜ {pageSize} 条/页</span>{Array.from({ length: totalPages }, (_, index) => <button key={index + 1} type="button" className={page === index + 1 ? "active" : ""} onClick={() => setPage(index + 1)}>{index + 1}</button>)}</div></div></section>
+              <section className="panel table-panel user-table-panel"><div className="table-heading"><div><h2>游戏用户明细</h2><span>用于查询单个用户的用户投入、用户出奖、净值与返奖率表现。</span></div></div><div className="table-wrap"><table><thead><tr><th>用户ID</th><th>昵称</th><th>区域</th><th>活跃天数</th><th>游戏次数</th><th>用户投入</th><th>用户出奖</th><th>净值</th><th>返奖率</th><th>最近游戏时间</th><th>用户画像</th></tr></thead><tbody>{loading ? <tr><td colSpan={11}><div className="loading-state"><span />正在加载用户数据…</div></td></tr> : visibleUsers.length ? visibleUsers.map((row) => <tr key={row.id}><td><b>{row.id}</b></td><td>{row.nickname}</td><td>{row.region}</td><td>{row.days}天</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{money(row.net)}</td><td className={row.rate >= 95 ? "rate-good" : ""}>{row.rate.toFixed(2)}%</td><td>{row.latest}</td><td><button type="button" className="row-action" onClick={() => setProfileUser(row)}>用户画像</button></td></tr>) : <tr><td colSpan={11}><div className="empty-state"><b>未找到匹配用户</b><span>请检查用户 ID、区域或游戏条件。</span><button type="button" onClick={resetUsers}>清除筛选</button></div></td></tr>}</tbody></table></div><div className="table-footer"><span>净值 = 用户投入 - 用户出奖；返奖率 = 用户出奖 ÷ 用户投入 × 100%。</span><div className="pagination"><span>共 {format.format(filteredUsers.length)} 条 ｜ {pageSize} 条/页</span>{Array.from({ length: totalPages }, (_, index) => <button key={index + 1} type="button" className={page === index + 1 ? "active" : ""} onClick={() => setPage(index + 1)}>{index + 1}</button>)}</div></div></section>
             </>
           )}
         </section>
@@ -508,6 +567,8 @@ export default function Home() {
           </section>
         </div>
       )}
+
+      {profileUser && <UserProfileModal user={profileUser} onClose={() => setProfileUser(null)} closeRef={profileCloseRef} />}
 
       {exportConfirm && <div className="modal-layer"><button className="modal-backdrop" type="button" aria-label="关闭导出确认" onClick={() => !exporting && setExportConfirm(false)} /><section className="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="export-title"><span className="confirm-icon">⇩</span><h2 id="export-title">确认导出数据？</h2><p>将按当前筛选条件导出 {view === "overview" ? filteredGames.length : filteredUsers.length} 条{view === "overview" ? "游戏汇总" : "用户明细"}数据，文件格式为 CSV。</p><div><button type="button" disabled={exporting} onClick={() => setExportConfirm(false)}>取消</button><button type="button" className="success" disabled={exporting} onClick={performExport}>{exporting ? "生成中…" : "确认导出"}</button></div></section></div>}
       <div className={`toast ${toast ? "show" : ""}`} role="status" aria-live="polite"><span>✓</span>{toast}</div>
