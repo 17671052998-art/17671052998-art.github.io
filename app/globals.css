@@ -231,8 +231,9 @@ td b { color: var(--text); font-weight: 600; }
 .game-detail-metric-filters { display: grid; grid-template-columns: auto repeat(5, minmax(118px, 1fr)) auto; align-items: end; gap: 8px; }
 .detail-filter-label { padding-bottom: 8px; color: var(--muted); font-size: 10px; white-space: nowrap; }
 .game-detail-metric-filters > label { min-width: 0; display: block; }.game-detail-metric-filters > label > span { display: block; margin-bottom: 5px; color: var(--muted); font-size: 9px; white-space: nowrap; }.game-detail-metric-filters > label > i { height: 30px; display: flex; align-items: center; border: 1px solid var(--line); border-radius: 5px; background: white; font-style: normal; }.game-detail-metric-filters input { width: calc(50% - 7px); min-width: 0; height: 28px; padding: 0 5px; border: 0; color: var(--text); background: transparent; font-size: 10px; outline: none; }.game-detail-metric-filters input::placeholder { color: #aab5c5; }.game-detail-metric-filters input:focus { background: #f4f8ff; }.game-detail-metric-filters em { width: 14px; flex: 0 0 14px; color: #aab5c5; font-size: 10px; font-style: normal; text-align: center; }.game-detail-metric-filters > button { height: 30px; padding: 0 9px; border: 0; border-radius: 5px; color: var(--primary-dark); background: #eef5ff; font-size: 10px; white-space: nowrap; }
-.game-detail-scope { text-align: right; }
-.game-detail-scope { margin-top: 9px; }.game-detail-scope span, .game-detail-scope small { display: block; color: var(--subtle); font-size: 10px; white-space: nowrap; }
+.game-detail-toolbar-foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; margin-top: 9px; }
+.detail-sort-controls { display: flex; align-items: flex-end; gap: 8px; }.detail-sort-controls label { display: block; }.detail-sort-controls label > span { display: block; margin-bottom: 4px; color: var(--muted); font-size: 9px; }.detail-sort-controls select { height: 28px; padding: 0 24px 0 8px; border: 1px solid var(--line); border-radius: 5px; color: var(--text); background: white; font-size: 10px; outline: none; }.detail-sort-controls select:focus-visible { border-color: #8fc2fa; box-shadow: 0 0 0 2px rgba(64,158,255,.09); }
+.game-detail-scope { text-align: right; }.game-detail-scope span, .game-detail-scope small { display: block; color: var(--subtle); font-size: 10px; white-space: nowrap; }
 .game-detail-scope small { margin-top: 4px; color: var(--muted); }
 .game-detail-metrics { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; padding: 0 22px 16px; }
 .game-detail-metrics > div { min-width: 0; padding: 12px 13px; border: 1px solid #e6ebf2; border-radius: 8px; background: #f9fbfd; }
@@ -301,7 +302,7 @@ td b { color: var(--text); font-weight: 600; }
   .game-detail-modal { width: calc(100vw - 24px); max-height: calc(100vh - 24px); }
   .game-detail-head, .game-detail-toolbar, .game-detail-footer { padding-inline: 16px; }
   .game-detail-footer { align-items: flex-start; flex-direction: column; }
-  .game-detail-metric-filters { grid-template-columns: repeat(2, minmax(118px, 1fr)); }.game-detail-scope { text-align: left; }
+  .game-detail-metric-filters { grid-template-columns: repeat(2, minmax(118px, 1fr)); }.game-detail-toolbar-foot { align-items: flex-start; flex-direction: column; }.game-detail-scope { text-align: left; }
   .game-detail-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); padding-inline: 16px; }
   .game-detail-table-wrap { margin-inline: 16px; }
   .user-profile-layer { padding: 12px; }.user-profile-modal { width: calc(100vw - 24px); }.user-profile-head, .user-profile-content, .user-profile-footer { padding-inline: 16px; }.profile-key-data, .profile-charts { grid-template-columns: 1fr; }.profile-radar-wrap { grid-template-columns: 140px 1fr; }.profile-radar { width: 140px; height: 140px; }.user-profile-footer { align-items: flex-start; flex-direction: column; }

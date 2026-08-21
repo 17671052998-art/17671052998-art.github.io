@@ -11,6 +11,7 @@ type DetailMetricFilters = {
   outputMin: string; outputMax: string; netMin: string; netMax: string;
   rateMin: string; rateMax: string;
 };
+type DetailSortKey = "plays" | "input" | "output" | "net" | "rate";
 
 type GameRow = {
   game: string; region: string; active: number; plays: number;
@@ -78,6 +79,7 @@ const users: UserRow[] = [
 
 const emptyDetailMetricFilters = (): DetailMetricFilters => ({ playsMin: "", playsMax: "", inputMin: "", inputMax: "", outputMin: "", outputMax: "", netMin: "", netMax: "", rateMin: "", rateMax: "" });
 const inNumberRange = (value: number, minimum: string, maximum: string) => (minimum === "" || value >= Number(minimum)) && (maximum === "" || value <= Number(maximum));
+const detailSortLabels: Record<DetailSortKey, string> = { plays: "游戏下注次数", input: "用户投入", output: "用户出奖", net: "净值", rate: "返奖率" };
 
 function buildGameUserRankings(gameName: string): GameUserRanking[] {
   const scale = 0.12;
@@ -318,6 +320,8 @@ export default function Home() {
   const [exporting, setExporting] = useState(false);
   const [detailGame, setDetailGame] = useState<GameRow | null>(null);
   const [detailMetricFilters, setDetailMetricFilters] = useState<DetailMetricFilters>(emptyDetailMetricFilters);
+  const [detailSortKey, setDetailSortKey] = useState<DetailSortKey>("input");
+  const [detailSortOrder, setDetailSortOrder] = useState<"desc" | "asc">("desc");
   const [profileUser, setProfileUser] = useState<UserRow | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const detailCloseRef = useRef<HTMLButtonElement | null>(null);
@@ -395,13 +399,17 @@ export default function Home() {
   const pageSize = 8;
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
   const visibleUsers = filteredUsers.slice((page - 1) * pageSize, page * pageSize);
-  const detailRankings = useMemo(() => detailGame ? buildGameUserRankings(detailGame.game).filter((row) =>
-    inNumberRange(row.plays, detailMetricFilters.playsMin, detailMetricFilters.playsMax) &&
-    inNumberRange(row.input, detailMetricFilters.inputMin, detailMetricFilters.inputMax) &&
-    inNumberRange(row.output, detailMetricFilters.outputMin, detailMetricFilters.outputMax) &&
-    inNumberRange(row.net, detailMetricFilters.netMin, detailMetricFilters.netMax) &&
-    inNumberRange(row.rate, detailMetricFilters.rateMin, detailMetricFilters.rateMax)
-  ) : [], [detailGame, detailMetricFilters]);
+  const detailRankings = useMemo(() => {
+    if (!detailGame) return [];
+    const rows = buildGameUserRankings(detailGame.game).filter((row) =>
+      inNumberRange(row.plays, detailMetricFilters.playsMin, detailMetricFilters.playsMax) &&
+      inNumberRange(row.input, detailMetricFilters.inputMin, detailMetricFilters.inputMax) &&
+      inNumberRange(row.output, detailMetricFilters.outputMin, detailMetricFilters.outputMax) &&
+      inNumberRange(row.net, detailMetricFilters.netMin, detailMetricFilters.netMax) &&
+      inNumberRange(row.rate, detailMetricFilters.rateMin, detailMetricFilters.rateMax)
+    );
+    return [...rows].sort((first, second) => detailSortOrder === "desc" ? second[detailSortKey] - first[detailSortKey] : first[detailSortKey] - second[detailSortKey]);
+  }, [detailGame, detailMetricFilters, detailSortKey, detailSortOrder]);
   const detailTotals = useMemo(() => {
     const totals = detailRankings.reduce((sum, row) => ({
       plays: sum.plays + row.plays,
@@ -435,6 +443,8 @@ export default function Home() {
 
   function openGameDetails(gameRow: GameRow) {
     setDetailMetricFilters(emptyDetailMetricFilters());
+    setDetailSortKey("input");
+    setDetailSortOrder("desc");
     setDetailGame(gameRow);
   }
 
@@ -557,7 +567,7 @@ export default function Home() {
                 <label><span>返奖率 (%)</span><i><input type="number" inputMode="decimal" placeholder="最小" value={detailMetricFilters.rateMin} onChange={(event) => updateDetailMetricFilter("rateMin", event.target.value)} /><em>—</em><input type="number" inputMode="decimal" placeholder="最大" value={detailMetricFilters.rateMax} onChange={(event) => updateDetailMetricFilter("rateMax", event.target.value)} /></i></label>
                 <button type="button" onClick={() => setDetailMetricFilters(emptyDetailMetricFilters())}>重置</button>
               </div>
-              <div className="game-detail-scope" id="game-detail-scope"><span>统计日期：2026-07-17</span><small>共 {detailRankings.length} 位用户 · 按用户投入降序</small></div>
+              <div className="game-detail-toolbar-foot"><div className="detail-sort-controls"><label><span>排序字段</span><select aria-label="排序字段" value={detailSortKey} onChange={(event) => setDetailSortKey(event.target.value as DetailSortKey)}>{(Object.keys(detailSortLabels) as DetailSortKey[]).map((key) => <option key={key} value={key}>{detailSortLabels[key]}</option>)}</select></label><label><span>排序顺序</span><select aria-label="排序顺序" value={detailSortOrder} onChange={(event) => setDetailSortOrder(event.target.value as "desc" | "asc")}><option value="desc">降序</option><option value="asc">升序</option></select></label></div><div className="game-detail-scope" id="game-detail-scope"><span>统计日期：2026-07-17</span><small>共 {detailRankings.length} 位用户 · 按{detailSortLabels[detailSortKey]}{detailSortOrder === "desc" ? "降序" : "升序"}</small></div></div>
             </div>
 
             <div className="game-detail-metrics">
