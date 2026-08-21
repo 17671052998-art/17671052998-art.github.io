@@ -433,7 +433,7 @@ export default function Home() {
               <section className="panel filter-panel user-filters">
                 <FilterField label="用户ID"><input placeholder="请输入用户ID / 昵称" value={userKeyword} onChange={(event) => setUserKeyword(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") queryUsers(); }} /></FilterField>
                 <FilterField label="区域"><select value={userRegion} onChange={(event) => setUserRegion(event.target.value)}><option>全部区域</option>{regions.map((item) => <option key={item}>{item}</option>)}</select></FilterField>
-                <FilterField label="游戏"><select value={userGame} onChange={(event) => setUserGame(event.target.value)}><option>全部游戏</option><option>Lucky Wheel</option><option>Crash</option><option>Slot King</option><option>Dice</option></select></FilterField>
+                <div className="filter-field game-filter-field"><span>游戏</span><GameSelector value={userGame} onChange={setUserGame} /></div>
                 <FilterField label="统计日期" wide><input value="2026-07-01  -  2026-07-17" readOnly /></FilterField>
                 <FilterField label="排序方式"><select value={sort} onChange={(event) => setSort(event.target.value)}><option>净值降序</option><option>游戏次数降序</option><option>最近游戏时间</option></select></FilterField>
                 <div className="filter-actions"><button type="button" className="primary" onClick={queryUsers}>查询</button><button type="button" onClick={resetUsers}>重置</button><button type="button" className="success" onClick={() => setExportConfirm(true)}>导出用户表</button></div>
