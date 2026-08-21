@@ -45,6 +45,17 @@ const vendorGames: Record<Vendor, string[]> = {
   灵仙: ["Slot King", "Dice"],
 };
 
+const vendorAllValue = (vendor: Vendor) => `${vendor}全部游戏`;
+const gameFilterVendor = (value: string) => (Object.keys(vendorGames) as Vendor[]).find((vendor) => value === vendorAllValue(vendor));
+const gameFilterMatches = (gameName: string, filterValue: string) => {
+  const vendor = gameFilterVendor(filterValue);
+  return filterValue === "全部游戏" || (vendor ? vendorGames[vendor].includes(gameName) : gameName === filterValue);
+};
+const gameFilterLabel = (value: string) => {
+  const vendor = gameFilterVendor(value);
+  return vendor ? `${vendor} · 全部游戏` : value;
+};
+
 const users: UserRow[] = [
   { id: "9382711", nickname: "Mia", region: "印尼", game: "Lucky Wheel", days: 14, plays: 386, input: 18620, output: 16880, net: 1740, rate: 90.66, latest: "2026-07-17 10:22", rank: "Top 1" },
   { id: "827160", nickname: "Leo", region: "菲律宾", game: "Crash", days: 12, plays: 322, input: 15480, output: 14930, net: 550, rate: 96.45, latest: "2026-07-17 10:18", rank: "Top 1" },
@@ -118,10 +129,10 @@ function FilterField({ label, children, wide = false, error }: { label: string; 
 
 function GameSelector({ value, onChange }: { value: string; onChange: (next: string) => void }) {
   const [open, setOpen] = useState(false);
-  const [vendor, setVendor] = useState<Vendor>(() => value !== "全部游戏" ? gameCatalog[value]?.vendor ?? "热游" : "热游");
+  const [vendor, setVendor] = useState<Vendor>(() => gameFilterVendor(value) ?? gameCatalog[value]?.vendor ?? "热游");
   const selectorRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
-  const selectedMeta = value !== "全部游戏" ? gameCatalog[value] : undefined;
+  const selectedMeta = gameCatalog[value];
 
   useEffect(() => {
     if (!open) return;
@@ -159,7 +170,7 @@ function GameSelector({ value, onChange }: { value: string; onChange: (next: str
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => {
-          if (!open && selectedMeta) setVendor(selectedMeta.vendor);
+          if (!open) setVendor(gameFilterVendor(value) ?? selectedMeta?.vendor ?? "热游");
           setOpen((current) => !current);
         }}
         onKeyDown={(event) => {
@@ -173,7 +184,7 @@ function GameSelector({ value, onChange }: { value: string; onChange: (next: str
           <span className="game-selector-value-icon" style={selectedMeta ? { color: selectedMeta.color, background: `${selectedMeta.color}18` } : undefined}>
             <SelectedIcon size={17} weight="duotone" aria-hidden="true" />
           </span>
-          <span>{value}</span>
+          <span>{gameFilterLabel(value)}</span>
         </span>
         <CaretDownIcon size={15} weight="bold" className="game-selector-caret" aria-hidden="true" />
       </button>
@@ -181,8 +192,7 @@ function GameSelector({ value, onChange }: { value: string; onChange: (next: str
       {open && (
         <section className="game-selector-panel" role="dialog" aria-label="选择游戏">
           <div className="game-selector-panel-head">
-            <div><strong>选择游戏</strong><span>先选择厂商，再单选游戏</span></div>
-            {value !== "全部游戏" && <button type="button" onClick={() => selectGame("全部游戏")}>清除选择</button>}
+            <div><strong>选择游戏</strong><span>选择厂商后可选全部游戏或单选游戏</span></div>
           </div>
 
           <div className="vendor-switch" role="group" aria-label="游戏厂商">
@@ -192,6 +202,16 @@ function GameSelector({ value, onChange }: { value: string; onChange: (next: str
           </div>
 
           <div className="vendor-game-list" role="radiogroup" aria-label={`${vendor}游戏列表`}>
+            {(() => {
+              const selected = value === vendorAllValue(vendor);
+              return (
+                <button type="button" role="radio" aria-checked={selected} className={`vendor-all-option ${selected ? "selected" : ""}`} onClick={() => selectGame(vendorAllValue(vendor))}>
+                  <span className="vendor-game-icon"><GameControllerIcon size={20} weight="duotone" aria-hidden="true" /></span>
+                  <span><strong>{vendor} · 全部游戏</strong><small>汇总该厂商旗下全部游戏</small></span>
+                  <span className="game-radio" aria-hidden="true">{selected && <CheckIcon size={12} weight="bold" />}</span>
+                </button>
+              );
+            })()}
             {vendorGames[vendor].map((gameName) => {
               const meta = gameCatalog[gameName];
               const GameIcon = meta.icon;
@@ -237,13 +257,13 @@ function GameCell({ name }: { name: string }) {
 export default function Home() {
   const [view, setView] = useState<View>("overview");
   const [region, setRegion] = useState("全部区域");
-  const [game, setGame] = useState("全部游戏");
+  const [game, setGame] = useState(vendorAllValue("热游"));
   const [userId, setUserId] = useState("");
   const [userRegion, setUserRegion] = useState("全部区域");
-  const [userGame, setUserGame] = useState("全部游戏");
+  const [userGame, setUserGame] = useState(vendorAllValue("热游"));
   const [userKeyword, setUserKeyword] = useState("");
   const [sort, setSort] = useState("净值降序");
-  const [appliedUser, setAppliedUser] = useState({ keyword: "", region: "全部区域", game: "全部游戏", sort: "净值降序" });
+  const [appliedUser, setAppliedUser] = useState({ keyword: "", region: "全部区域", game: vendorAllValue("热游"), sort: "净值降序" });
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -288,7 +308,7 @@ export default function Home() {
     const selectedUser = userId ? users.find((row) => row.id === userId) : undefined;
     return games.filter((row) =>
       (region === "全部区域" || row.region === region) &&
-      (game === "全部游戏" || row.game === game) &&
+      gameFilterMatches(row.game, game) &&
       (!userId || (!!selectedUser && row.region === selectedUser.region && row.game === selectedUser.game))
     );
   }, [region, game, userId]);
@@ -307,7 +327,7 @@ export default function Home() {
     const rows = users.filter((row) =>
       (!keyword || row.id.includes(keyword) || row.nickname.toLowerCase().includes(keyword)) &&
       (appliedUser.region === "全部区域" || row.region === appliedUser.region) &&
-      (appliedUser.game === "全部游戏" || row.game === appliedUser.game)
+      gameFilterMatches(row.game, appliedUser.game)
     );
     return [...rows].sort((a, b) => appliedUser.sort === "游戏次数降序" ? b.plays - a.plays : appliedUser.sort === "最近游戏时间" ? b.latest.localeCompare(a.latest) : b.net - a.net);
   }, [appliedUser]);
@@ -340,12 +360,12 @@ export default function Home() {
   }
 
   function resetOverview() {
-    setRegion("全部区域"); setGame("全部游戏"); setUserId(""); notify("筛选条件已重置");
+    setRegion("全部区域"); setGame(vendorAllValue("热游")); setUserId(""); notify("筛选条件已重置");
   }
 
   function resetUsers() {
-    setUserKeyword(""); setUserRegion("全部区域"); setUserGame("全部游戏"); setSort("净值降序");
-    setAppliedUser({ keyword: "", region: "全部区域", game: "全部游戏", sort: "净值降序" }); setPage(1); notify("筛选条件已重置");
+    setUserKeyword(""); setUserRegion("全部区域"); setUserGame(vendorAllValue("热游")); setSort("净值降序");
+    setAppliedUser({ keyword: "", region: "全部区域", game: vendorAllValue("热游"), sort: "净值降序" }); setPage(1); notify("筛选条件已重置");
   }
 
   function openGameDetails(gameRow: GameRow) {
@@ -423,7 +443,7 @@ export default function Home() {
               </section>
 
               <section className="analytics-row">
-                <article className="panel regional-statistics-panel"><div className="panel-title"><h2>游戏区域资金统计</h2><span>{game === "全部游戏" ? "按区域汇总全部游戏的用户投入与用户出奖" : `${game} 各区域用户投入与用户出奖`}</span></div><div className="region-stat-head" aria-hidden="true"><span>排名</span><span>区域</span><span>游戏</span><span>用户投入</span><span>用户出奖</span></div><div className="region-stat-list">{regionInvestmentStats.length ? regionInvestmentStats.map((item, index) => <div className="region-stat-row" key={item.region}><b className={index === 0 ? "first" : ""}>{index + 1}</b><strong>{item.region}</strong><span>{game === "全部游戏" ? "全部游戏" : game}</span><em title={`${moneyText(item.input)} 金币`}>{money(item.input)}</em><em title={`${moneyText(item.output)} 金币`}>{money(item.output)}</em></div>) : <div className="region-stat-empty">暂无匹配区域数据</div>}</div></article>
+                <article className="panel regional-statistics-panel"><div className="panel-title"><h2>游戏区域资金统计</h2><span>{gameFilterVendor(game) ? `按区域汇总${gameFilterLabel(game)}的用户投入与用户出奖` : `${game} 各区域用户投入与用户出奖`}</span></div><div className="region-stat-head" aria-hidden="true"><span>排名</span><span>区域</span><span>游戏</span><span>用户投入</span><span>用户出奖</span></div><div className="region-stat-list">{regionInvestmentStats.length ? regionInvestmentStats.map((item, index) => <div className="region-stat-row" key={item.region}><b className={index === 0 ? "first" : ""}>{index + 1}</b><strong>{item.region}</strong><span>{gameFilterLabel(game)}</span><em title={`${moneyText(item.input)} 金币`}>{money(item.input)}</em><em title={`${moneyText(item.output)} 金币`}>{money(item.output)}</em></div>) : <div className="region-stat-empty">暂无匹配区域数据</div>}</div></article>
               </section>
 
               <section className="panel table-panel"><div className="table-heading"><div><h2>游戏汇总数据</h2><span>悬浮问号查看游戏资料，点击“用户明细”查看该游戏的用户排行</span></div><button type="button" className="table-tool" onClick={() => setExportConfirm(true)}>⇩ 导出当前结果</button></div><div className="table-wrap game-table-wrap"><table><thead><tr><th>游戏</th><th>区域</th><th>活跃用户</th><th>游戏次数</th><th>用户投入</th><th>用户出奖</th><th>净值</th><th>返奖率</th><th>热度</th><th>操作</th></tr></thead><tbody>{loading ? <tr><td colSpan={10}><div className="loading-state"><span />正在加载报表数据…</div></td></tr> : filteredGames.length ? filteredGames.slice(0, 4).map((row) => <tr key={`${row.region}-${row.game}`}><td><GameCell name={row.game} /></td><td>{row.region}</td><td>{format.format(row.active)}</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{money(row.net)}</td><td>{row.rate.toFixed(2)}%</td><td>{row.rank}</td><td><button type="button" className="row-action" onClick={() => openGameDetails(row)}>用户明细</button></td></tr>) : <tr><td colSpan={10}><div className="empty-state"><b>未找到匹配数据</b><span>请调整区域、游戏或用户筛选条件后重试。</span><button type="button" onClick={resetOverview}>清除筛选</button></div></td></tr>}</tbody></table></div><div className="pagination"><span>共 {filteredGames.length} 条 ｜ 20 条/页</span><button className="active" type="button">1</button><button type="button" disabled>2</button></div></section>

@@ -118,6 +118,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .vendor-game-list > button:hover { background: #f6f9fd; }
 .vendor-game-list > button:focus-visible { border-color: #8fc2fa; outline: none; box-shadow: 0 0 0 2px rgba(64,158,255,.09); }
 .vendor-game-list > button.selected { border-color: #afd2fb; background: #f3f8ff; }
+.vendor-game-list > button.vendor-all-option { border-color: #e0e9f4; background: #f8fbff; }
+.vendor-game-list > button.vendor-all-option:hover { background: #f1f7ff; }
+.vendor-game-list > button.vendor-all-option.selected { border-color: #afd2fb; background: #f3f8ff; }
+.vendor-all-option .vendor-game-icon { color: var(--primary-dark); background: #eaf3ff; }
 .vendor-game-icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 8px; }
 .vendor-game-list > button > span:nth-child(2) { min-width: 0; }
 .vendor-game-list strong, .vendor-game-list small { display: block; }
