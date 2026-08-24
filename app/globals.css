@@ -136,7 +136,6 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .filter-actions button:hover { filter: brightness(.98); }
 .update-time, .query-hint { margin-left: auto; align-self: center; color: var(--subtle); font-size: 11px; white-space: nowrap; }
 .query-hint { color: var(--primary-dark); }
-.overview-filters .filter-field:nth-child(3) { min-width: 190px; }
 .user-filters .filter-field:first-child { min-width: 190px; }
 
 .overview-metrics { display: grid; gap: 16px; margin-top: 16px; }

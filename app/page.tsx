@@ -318,7 +318,6 @@ export default function Home() {
   const [view, setView] = useState<View>("overview");
   const [region, setRegion] = useState("全部区域");
   const [game, setGame] = useState(vendorAllValue("热游"));
-  const [userId, setUserId] = useState("");
   const [userRegion, setUserRegion] = useState("全部区域");
   const [userGame, setUserGame] = useState(vendorAllValue("热游"));
   const [userKeyword, setUserKeyword] = useState("");
@@ -381,14 +380,9 @@ export default function Home() {
     setTimeout(() => { setLoading(false); notify(message); }, 520);
   }
 
-  const filteredGames = useMemo(() => {
-    const selectedUser = userId ? users.find((row) => row.id === userId) : undefined;
-    return games.filter((row) =>
-      (region === "全部区域" || row.region === region) &&
-      gameFilterMatches(row.game, game) &&
-      (!userId || (!!selectedUser && row.region === selectedUser.region && row.game === selectedUser.game))
-    );
-  }, [region, game, userId]);
+  const filteredGames = useMemo(() => games.filter((row) =>
+    (region === "全部区域" || row.region === region) && gameFilterMatches(row.game, game)
+  ), [region, game]);
 
   const regionInvestmentStats = useMemo(() => {
     const byRegion = new Map<string, { input: number; output: number }>();
@@ -455,7 +449,7 @@ export default function Home() {
   }
 
   function resetOverview() {
-    setRegion("全部区域"); setGame(vendorAllValue("热游")); setUserId(""); notify("筛选条件已重置");
+    setRegion("全部区域"); setGame(vendorAllValue("热游")); notify("筛选条件已重置");
   }
 
   function resetUsers() {
@@ -523,7 +517,6 @@ export default function Home() {
               <section className="panel filter-panel overview-filters">
                 <FilterField label="区域"><select value={region} onChange={(event) => selectOverviewRegion(event.target.value)}><option>全部区域</option>{regions.map((item) => <option key={item}>{item}</option>)}</select></FilterField>
                 <div className="filter-field game-filter-field"><span>游戏</span><GameSelector value={game} onChange={setGame} /></div>
-                <FilterField label="用户ID"><input inputMode="numeric" placeholder="请输入完整用户ID" value={userId} onChange={(event) => setUserId(event.target.value.replace(/\D/g, ""))} onKeyDown={(event) => { if (event.key === "Enter") simulateQuery(); }} /></FilterField>
                 <FilterField label="统计日期" wide><input value="2026-07-01  -  2026-07-17" readOnly /></FilterField>
                 <div className="filter-actions"><button type="button" className="primary" onClick={() => simulateQuery()}>查询</button><button type="button" onClick={resetOverview}>重置</button><button type="button" className="success" onClick={() => setExportConfirm(true)}>导出报表</button></div>
                 <span className="update-time">数据更新时间：10:30</span>
