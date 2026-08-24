@@ -18,8 +18,7 @@ type UserRow = {
   input: number; output: number; net: number; rate: number; latest: string; rank: string;
 };
 
-type UserGamePreference = { game: string; input: number; plays: number };
-type PreferencePeriod = "本周" | "近半月" | "本月";
+type UserGameRow = UserRow & { gameRank: number };
 
 type GameUserRanking = {
   id: string; nickname: string; region: string; plays: number;
@@ -126,17 +125,16 @@ function ProfitLoss({ value }: { value: number }) {
 
 const profitLoss = (value: number) => <ProfitLoss value={value} />;
 
-const preferencePeriods: PreferencePeriod[] = ["本周", "近半月", "本月"];
-
-function buildUserGamePreferences(user: UserRow, period: PreferencePeriod): UserGamePreference[] {
-  const gamesByPreference = [user.game, ...Object.keys(gameCatalog).filter((game) => game !== user.game)].slice(0, 3);
-  const weights = [1, 0.58, 0.34];
-  const periodWeights: Record<PreferencePeriod, number[]> = { 本周: [0.42, 0.36, 0.25], 近半月: [0.72, 0.61, 0.48], 本月: [1, 0.91, 0.83] };
-  return gamesByPreference.map((game, index) => ({
-    game,
-    input: Math.round(user.input * weights[index] * periodWeights[period][index]),
-    plays: Math.max(1, Math.round(user.plays * weights[index] * periodWeights[period][index])),
-  })).sort((first, second) => second.input - first.input);
+function buildUserGameRows(user: UserRow): Omit<UserGameRow, "gameRank">[] {
+  const gameNames = [user.game, ...Object.keys(gameCatalog).filter((game) => game !== user.game)];
+  const inputWeights = [1, 0.64, 0.42, 0.26];
+  const rateOffsets = [0, -1.4, 1.25, -0.8];
+  return gameNames.map((game, index) => {
+    const input = Math.max(1, Math.round(user.input * inputWeights[index]));
+    const rate = Number(Math.max(82, user.rate + rateOffsets[index]).toFixed(2));
+    const output = Math.round(input * rate / 100);
+    return { ...user, game, input, output, net: input - output, rate, plays: Math.max(1, Math.round(user.plays * inputWeights[index])) };
+  });
 }
 
 function MetricCard({ mark, title, value, note, tone, valueTitle, valueHint }: { mark: string; title: string; value: React.ReactNode; note: string; tone: string; valueTitle?: string; valueHint?: string }) {
@@ -316,29 +314,6 @@ function UserProfileModal({ user, onClose, closeRef }: { user: UserRow; onClose:
   );
 }
 
-function UserPreferenceModal({ user, onClose, closeRef }: { user: UserRow; onClose: () => void; closeRef: React.RefObject<HTMLButtonElement | null> }) {
-  const [period, setPeriod] = useState<PreferencePeriod>("本周");
-  const preferences = buildUserGamePreferences(user, period);
-  const highestInput = preferences[0]?.input ?? 1;
-  return (
-    <div className="modal-layer user-profile-layer">
-      <button className="modal-backdrop" type="button" aria-label="关闭用户画像" onClick={onClose} />
-      <section className="preference-modal" role="dialog" aria-modal="true" aria-labelledby="preference-list-title">
-        <header className="user-profile-head">
-          <div className="user-profile-identity"><span>{user.nickname.slice(0, 1).toUpperCase()}</span><div><h2 id="preference-list-title">{user.nickname} 游戏偏好排行榜</h2><p>ID {user.id} · {period}按用户投入金币降序</p></div></div>
-          <button ref={closeRef} type="button" className="game-detail-close" aria-label="关闭用户画像" onClick={onClose}><XIcon size={18} weight="bold" aria-hidden="true" /></button>
-        </header>
-        <div className="preference-list-content">
-          <div className="preference-period-tabs" role="tablist" aria-label="偏好排行榜统计周期">{preferencePeriods.map((item) => <button key={item} type="button" role="tab" aria-selected={period === item} className={period === item ? "active" : ""} onClick={() => setPeriod(item)}>{item}</button>)}</div>
-          <div className="preference-list-head"><span>排名</span><span>游戏</span><span>用户投入</span><span>游戏次数</span></div>
-          <ol className="preference-list">{preferences.map((item, index) => { const meta = gameCatalog[item.game]; const GameIcon = meta?.icon ?? GameControllerIcon; return <li key={item.game}><b className={index < 3 ? `top-${index + 1}` : ""}>{index + 1}</b><div className="preference-game"><i style={{ color: meta?.color, background: `${meta?.color ?? "#667085"}18` }}><GameIcon size={18} weight="duotone" aria-hidden="true" /></i><strong>{item.game}</strong></div><div className="preference-input"><span><Money value={item.input} /></span><i><em style={{ width: `${item.input / highestInput * 100}%` }} /></i></div><span>{format.format(item.plays)}</span></li>; })}</ol>
-        </div>
-        <footer className="user-profile-footer"><span>偏好排行按{period}内的用户投入金币汇总。</span><button type="button" onClick={onClose}>关闭</button></footer>
-      </section>
-    </div>
-  );
-}
-
 export default function Home() {
   const [view, setView] = useState<View>("overview");
   const [region, setRegion] = useState("全部区域");
@@ -347,8 +322,8 @@ export default function Home() {
   const [userRegion, setUserRegion] = useState("全部区域");
   const [userGame, setUserGame] = useState(vendorAllValue("热游"));
   const [userKeyword, setUserKeyword] = useState("");
-  const [sort, setSort] = useState("盈亏降序");
-  const [appliedUser, setAppliedUser] = useState({ keyword: "", region: "全部区域", game: vendorAllValue("热游"), sort: "盈亏降序" });
+  const [sort, setSort] = useState("用户投入降序");
+  const [appliedUser, setAppliedUser] = useState({ keyword: "", region: "全部区域", game: vendorAllValue("热游"), sort: "用户投入降序" });
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -361,11 +336,9 @@ export default function Home() {
   const [detailSortKey, setDetailSortKey] = useState<DetailSortKey>("input");
   const [detailSortOrder, setDetailSortOrder] = useState<"desc" | "asc">("desc");
   const [profileUser, setProfileUser] = useState<UserRow | null>(null);
-  const [preferenceUser, setPreferenceUser] = useState<UserRow | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const detailCloseRef = useRef<HTMLButtonElement | null>(null);
   const profileCloseRef = useRef<HTMLButtonElement | null>(null);
-  const preferenceCloseRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     if (!detailGame) return;
@@ -397,19 +370,6 @@ export default function Home() {
     };
   }, [profileUser]);
 
-  useEffect(() => {
-    if (!preferenceUser) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    requestAnimationFrame(() => preferenceCloseRef.current?.focus());
-    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setPreferenceUser(null); };
-    document.addEventListener("keydown", closeOnEscape);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", closeOnEscape);
-    };
-  }, [preferenceUser]);
-
   function notify(message: string) {
     setToast(message);
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -439,14 +399,16 @@ export default function Home() {
     return [...byRegion.entries()].map(([regionName, values]) => ({ region: regionName, ...values })).sort((a, b) => b.input - a.input);
   }, [filteredGames]);
 
-  const filteredUsers = useMemo(() => {
+  const filteredUsers = useMemo<UserGameRow[]>(() => {
     const keyword = appliedUser.keyword.trim().toLowerCase();
-    const rows = users.filter((row) =>
+    const rows = users.flatMap(buildUserGameRows).filter((row) =>
       (!keyword || row.id.includes(keyword) || row.nickname.toLowerCase().includes(keyword)) &&
       (appliedUser.region === "全部区域" || row.region === appliedUser.region) &&
       gameFilterMatches(row.game, appliedUser.game)
     );
-    return [...rows].sort((a, b) => appliedUser.sort === "游戏次数降序" ? b.plays - a.plays : appliedUser.sort === "最近游戏时间" ? b.latest.localeCompare(a.latest) : b.net - a.net);
+    const ranks = new Map([...rows].sort((first, second) => second.input - first.input).map((row, index) => [`${row.id}-${row.game}`, index + 1]));
+    const sortedRows = [...rows].sort((first, second) => appliedUser.sort === "游戏次数降序" ? second.plays - first.plays : appliedUser.sort === "最近游戏时间" ? second.latest.localeCompare(first.latest) : appliedUser.sort === "盈亏降序" ? second.net - first.net : second.input - first.input);
+    return sortedRows.map((row) => ({ ...row, gameRank: ranks.get(`${row.id}-${row.game}`) ?? 0 }));
   }, [appliedUser]);
 
   const pageSize = 8;
@@ -497,8 +459,8 @@ export default function Home() {
   }
 
   function resetUsers() {
-    setUserKeyword(""); setUserRegion("全部区域"); setUserGame(vendorAllValue("热游")); setSort("盈亏降序");
-    setAppliedUser({ keyword: "", region: "全部区域", game: vendorAllValue("热游"), sort: "盈亏降序" }); setPage(1); notify("筛选条件已重置");
+    setUserKeyword(""); setUserRegion("全部区域"); setUserGame(vendorAllValue("热游")); setSort("用户投入降序");
+    setAppliedUser({ keyword: "", region: "全部区域", game: vendorAllValue("热游"), sort: "用户投入降序" }); setPage(1); notify("筛选条件已重置");
   }
 
   function openGameDetails(gameRow: GameRow) {
@@ -511,10 +473,10 @@ export default function Home() {
     setExporting(true);
     setTimeout(() => {
       const rows = view === "overview" ? filteredGames : filteredUsers;
-      const header = view === "overview" ? ["游戏", "区域", "活跃用户", "游戏次数", "用户投入", "用户出奖", "盈亏", "返奖率", "热度"] : ["用户ID", "昵称", "区域", "偏好游戏", "活跃天数", "游戏次数", "用户投入", "用户出奖", "盈亏", "返奖率", "最近游戏时间", "偏好排名"];
+      const header = view === "overview" ? ["游戏", "区域", "活跃用户", "游戏次数", "用户投入", "用户出奖", "盈亏", "返奖率", "热度"] : ["游戏排行", "用户ID", "昵称", "区域", "游戏", "活跃天数", "游戏次数", "用户投入", "用户出奖", "盈亏", "返奖率", "最近游戏时间"];
       const exportRows = view === "overview"
         ? (rows as GameRow[]).map((row) => [row.game, row.region, row.active, row.plays, row.input, row.output, row.net, row.rate, row.rank])
-        : (rows as UserRow[]).map((row) => [row.id, row.nickname, row.region, row.game, row.days, row.plays, row.input, row.output, row.net, row.rate, row.latest, row.rank]);
+        : (rows as UserGameRow[]).map((row) => [row.gameRank, row.id, row.nickname, row.region, row.game, row.days, row.plays, row.input, row.output, row.net, row.rate, row.latest]);
       const body = exportRows.map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(","));
       const blob = new Blob(["\ufeff" + [header.join(","), ...body].join("\n")], { type: "text/csv;charset=utf-8" });
       const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = view === "overview" ? "游戏数据报表.csv" : "游戏用户列表.csv"; anchor.click(); URL.revokeObjectURL(url);
@@ -588,11 +550,11 @@ export default function Home() {
                 <FilterField label="区域"><select value={userRegion} onChange={(event) => setUserRegion(event.target.value)}><option>全部区域</option>{regions.map((item) => <option key={item}>{item}</option>)}</select></FilterField>
                 <div className="filter-field game-filter-field"><span>游戏</span><GameSelector value={userGame} onChange={setUserGame} /></div>
                 <FilterField label="统计日期" wide><input value="2026-07-01  -  2026-07-17" readOnly /></FilterField>
-                <FilterField label="排序方式"><select value={sort} onChange={(event) => setSort(event.target.value)}><option>盈亏降序</option><option>游戏次数降序</option><option>最近游戏时间</option></select></FilterField>
+                <FilterField label="排序方式"><select value={sort} onChange={(event) => setSort(event.target.value)}><option>用户投入降序</option><option>盈亏降序</option><option>游戏次数降序</option><option>最近游戏时间</option></select></FilterField>
                 <div className="filter-actions"><button type="button" className="primary" onClick={queryUsers}>查询</button><button type="button" onClick={resetUsers}>重置</button></div>
               </section>
 
-              <section className="panel table-panel user-table-panel"><div className="table-heading"><div><h2>游戏用户明细</h2><span>用于查询单个用户的用户投入、用户出奖、盈亏与返奖率表现。</span></div><span className="user-table-total">查询用户数 <b>{format.format(filteredUsers.length ? 86420 : 0)}</b></span></div><div className="table-wrap"><table><thead><tr><th>用户ID</th><th>昵称</th><th>区域</th><th>活跃天数</th><th>游戏次数</th><th>用户投入</th><th>用户出奖</th><th>盈亏</th><th>返奖率</th><th>最近游戏时间</th><th>用户画像</th></tr></thead><tbody>{loading ? <tr><td colSpan={11}><div className="loading-state"><span />正在加载用户数据…</div></td></tr> : visibleUsers.length ? visibleUsers.map((row) => <tr key={row.id}><td><b>{row.id}</b></td><td>{row.nickname}</td><td>{row.region}</td><td>{row.days}天</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{profitLoss(row.net)}</td><td className={row.rate >= 95 ? "rate-good" : ""}>{row.rate.toFixed(2)}%</td><td>{row.latest}</td><td><button type="button" className="row-action" onClick={() => setPreferenceUser(row)}>用户画像</button></td></tr>) : <tr><td colSpan={11}><div className="empty-state"><b>未找到匹配用户</b><span>请检查用户 ID、区域或游戏条件。</span><button type="button" onClick={resetUsers}>清除筛选</button></div></td></tr>}</tbody></table></div><div className="table-footer"><span>盈亏 = 用户投入 - 用户出奖；返奖率 = 用户出奖 ÷ 用户投入 × 100%。</span><div className="pagination"><span>共 {format.format(filteredUsers.length)} 条 ｜ {pageSize} 条/页</span>{Array.from({ length: totalPages }, (_, index) => <button key={index + 1} type="button" className={page === index + 1 ? "active" : ""} onClick={() => setPage(index + 1)}>{index + 1}</button>)}</div></div></section>
+              <section className="panel table-panel user-table-panel"><div className="table-heading"><div><h2>游戏用户明细</h2><span>按用户与游戏维度展示投入、出奖、盈亏与返奖率表现。</span></div><span className="user-table-total">查询用户数 <b>{format.format(filteredUsers.length ? 86420 : 0)}</b></span></div><div className="table-wrap"><table><thead><tr><th>游戏排行</th><th>用户ID</th><th>昵称</th><th>区域</th><th>游戏</th><th>活跃天数</th><th>游戏次数</th><th>用户投入</th><th>用户出奖</th><th>盈亏</th><th>返奖率</th><th>最近游戏时间</th></tr></thead><tbody>{loading ? <tr><td colSpan={12}><div className="loading-state"><span />正在加载用户数据…</div></td></tr> : visibleUsers.length ? visibleUsers.map((row) => <tr key={`${row.id}-${row.game}`}><td><span className={`game-rank ${row.gameRank <= 3 ? `top-${row.gameRank}` : ""}`}>{row.gameRank}</span></td><td><b>{row.id}</b></td><td>{row.nickname}</td><td>{row.region}</td><td><GameCell name={row.game} /></td><td>{row.days}天</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{profitLoss(row.net)}</td><td className={row.rate >= 95 ? "rate-good" : ""}>{row.rate.toFixed(2)}%</td><td>{row.latest}</td></tr>) : <tr><td colSpan={12}><div className="empty-state"><b>未找到匹配用户游戏数据</b><span>请检查用户 ID、区域或游戏条件。</span><button type="button" onClick={resetUsers}>清除筛选</button></div></td></tr>}</tbody></table></div><div className="table-footer"><span>游戏排行按用户投入金额降序；盈亏 = 用户投入 - 用户出奖；返奖率 = 用户出奖 ÷ 用户投入 × 100%。</span><div className="pagination"><span>共 {format.format(filteredUsers.length)} 条 ｜ {pageSize} 条/页</span>{Array.from({ length: totalPages }, (_, index) => <button key={index + 1} type="button" className={page === index + 1 ? "active" : ""} onClick={() => setPage(index + 1)}>{index + 1}</button>)}</div></div></section>
             </>
           )}
         </section>
@@ -635,8 +597,6 @@ export default function Home() {
       )}
 
       {profileUser && <UserProfileModal user={profileUser} onClose={() => setProfileUser(null)} closeRef={profileCloseRef} />}
-      {preferenceUser && <UserPreferenceModal user={preferenceUser} onClose={() => setPreferenceUser(null)} closeRef={preferenceCloseRef} />}
-
       {exportConfirm && <div className="modal-layer"><button className="modal-backdrop" type="button" aria-label="关闭导出确认" onClick={() => !exporting && setExportConfirm(false)} /><section className="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="export-title"><span className="confirm-icon">⇩</span><h2 id="export-title">确认导出数据？</h2><p>将按当前筛选条件导出 {view === "overview" ? filteredGames.length : filteredUsers.length} 条{view === "overview" ? "游戏汇总" : "用户明细"}数据，文件格式为 CSV。</p><div><button type="button" disabled={exporting} onClick={() => setExportConfirm(false)}>取消</button><button type="button" className="success" disabled={exporting} onClick={performExport}>{exporting ? "生成中…" : "确认导出"}</button></div></section></div>}
       <div className={`toast ${toast ? "show" : ""}`} role="status" aria-live="polite"><span>✓</span>{toast}</div>
     </main>
