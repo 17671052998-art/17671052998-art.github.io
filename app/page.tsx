@@ -18,6 +18,8 @@ type UserRow = {
   input: number; output: number; net: number; rate: number; latest: string; rank: string;
 };
 
+type UserGamePreference = { game: string; input: number; plays: number };
+
 type GameUserRanking = {
   id: string; nickname: string; region: string; plays: number;
   input: number; output: number; net: number; rate: number;
@@ -122,6 +124,16 @@ function ProfitLoss({ value }: { value: number }) {
 }
 
 const profitLoss = (value: number) => <ProfitLoss value={value} />;
+
+function buildUserGamePreferences(user: UserRow): UserGamePreference[] {
+  const gamesByPreference = [user.game, ...Object.keys(gameCatalog).filter((game) => game !== user.game)].slice(0, 3);
+  const weights = [1, 0.58, 0.34];
+  return gamesByPreference.map((game, index) => ({
+    game,
+    input: Math.round(user.input * weights[index]),
+    plays: Math.max(1, Math.round(user.plays * weights[index])),
+  })).sort((first, second) => second.input - first.input);
+}
 
 function MetricCard({ mark, title, value, note, tone, valueTitle, valueHint }: { mark: string; title: string; value: React.ReactNode; note: string; tone: string; valueTitle?: string; valueHint?: string }) {
   return <article className="metric-card"><span className={`metric-icon ${tone}`}>{mark}</span><div className="metric-copy"><p>{title}</p><small>{note}</small></div><div className="metric-value-block"><strong title={valueTitle}>{value}</strong>{valueHint && <small className="metric-value-hint">{valueHint}</small>}</div></article>;
@@ -300,6 +312,27 @@ function UserProfileModal({ user, onClose, closeRef }: { user: UserRow; onClose:
   );
 }
 
+function UserPreferenceModal({ user, onClose, closeRef }: { user: UserRow; onClose: () => void; closeRef: React.RefObject<HTMLButtonElement | null> }) {
+  const preferences = buildUserGamePreferences(user);
+  const highestInput = preferences[0]?.input ?? 1;
+  return (
+    <div className="modal-layer user-profile-layer">
+      <button className="modal-backdrop" type="button" aria-label="关闭偏好列表" onClick={onClose} />
+      <section className="preference-modal" role="dialog" aria-modal="true" aria-labelledby="preference-list-title">
+        <header className="user-profile-head">
+          <div className="user-profile-identity"><span>{user.nickname.slice(0, 1).toUpperCase()}</span><div><h2 id="preference-list-title">{user.nickname} 游戏偏好列表</h2><p>ID {user.id} · 按用户投入金币降序</p></div></div>
+          <button ref={closeRef} type="button" className="game-detail-close" aria-label="关闭偏好列表" onClick={onClose}><XIcon size={18} weight="bold" aria-hidden="true" /></button>
+        </header>
+        <div className="preference-list-content">
+          <div className="preference-list-head"><span>排名</span><span>游戏</span><span>用户投入</span><span>游戏次数</span></div>
+          <ol className="preference-list">{preferences.map((item, index) => { const meta = gameCatalog[item.game]; const GameIcon = meta?.icon ?? GameControllerIcon; return <li key={item.game}><b className={index < 3 ? `top-${index + 1}` : ""}>{index + 1}</b><div className="preference-game"><i style={{ color: meta?.color, background: `${meta?.color ?? "#667085"}18` }}><GameIcon size={18} weight="duotone" aria-hidden="true" /></i><strong>{item.game}</strong></div><div className="preference-input"><span><Money value={item.input} /></span><i><em style={{ width: `${item.input / highestInput * 100}%` }} /></i></div><span>{format.format(item.plays)}</span></li>; })}</ol>
+        </div>
+        <footer className="user-profile-footer"><span>偏好排行按当前统计周期内的用户投入金币汇总。</span><button type="button" onClick={onClose}>关闭</button></footer>
+      </section>
+    </div>
+  );
+}
+
 export default function Home() {
   const [view, setView] = useState<View>("overview");
   const [region, setRegion] = useState("全部区域");
@@ -322,9 +355,11 @@ export default function Home() {
   const [detailSortKey, setDetailSortKey] = useState<DetailSortKey>("input");
   const [detailSortOrder, setDetailSortOrder] = useState<"desc" | "asc">("desc");
   const [profileUser, setProfileUser] = useState<UserRow | null>(null);
+  const [preferenceUser, setPreferenceUser] = useState<UserRow | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const detailCloseRef = useRef<HTMLButtonElement | null>(null);
   const profileCloseRef = useRef<HTMLButtonElement | null>(null);
+  const preferenceCloseRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     if (!detailGame) return;
@@ -355,6 +390,19 @@ export default function Home() {
       document.removeEventListener("keydown", closeOnEscape);
     };
   }, [profileUser]);
+
+  useEffect(() => {
+    if (!preferenceUser) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    requestAnimationFrame(() => preferenceCloseRef.current?.focus());
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setPreferenceUser(null); };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [preferenceUser]);
 
   function notify(message: string) {
     setToast(message);
@@ -540,7 +588,7 @@ export default function Home() {
 
               <section className="user-metrics"><MetricCard mark="查" title="查询用户数" value={format.format(filteredUsers.length ? 86420 : 0)} note="当前筛选条件下用户数" tone="blue" /><MetricCard mark="高" title="高频游戏用户" value="12,680" note="近7日游戏 ≥ 35次" tone="violet" /><MetricCard mark="人" title="人均用户投入" value={<Money value={190.70} />} note="总用户投入 ÷ 投入用户数" tone="amber" /><MetricCard mark="返" title="平均返奖率" value="89.64%" note="用户出奖 ÷ 用户投入" tone="green" /></section>
 
-              <section className="panel table-panel user-table-panel"><div className="table-heading"><div><h2>游戏用户明细</h2><span>用于查询单个用户的用户投入、用户出奖、盈亏与返奖率表现。</span></div></div><div className="table-wrap"><table><thead><tr><th>用户ID</th><th>昵称</th><th>区域</th><th>活跃天数</th><th>游戏次数</th><th>用户投入</th><th>用户出奖</th><th>盈亏</th><th>返奖率</th><th>最近游戏时间</th><th>用户画像</th></tr></thead><tbody>{loading ? <tr><td colSpan={11}><div className="loading-state"><span />正在加载用户数据…</div></td></tr> : visibleUsers.length ? visibleUsers.map((row) => <tr key={row.id}><td><b>{row.id}</b></td><td>{row.nickname}</td><td>{row.region}</td><td>{row.days}天</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{profitLoss(row.net)}</td><td className={row.rate >= 95 ? "rate-good" : ""}>{row.rate.toFixed(2)}%</td><td>{row.latest}</td><td><button type="button" className="row-action" onClick={() => setProfileUser(row)}>用户画像</button></td></tr>) : <tr><td colSpan={11}><div className="empty-state"><b>未找到匹配用户</b><span>请检查用户 ID、区域或游戏条件。</span><button type="button" onClick={resetUsers}>清除筛选</button></div></td></tr>}</tbody></table></div><div className="table-footer"><span>盈亏 = 用户投入 - 用户出奖；返奖率 = 用户出奖 ÷ 用户投入 × 100%。</span><div className="pagination"><span>共 {format.format(filteredUsers.length)} 条 ｜ {pageSize} 条/页</span>{Array.from({ length: totalPages }, (_, index) => <button key={index + 1} type="button" className={page === index + 1 ? "active" : ""} onClick={() => setPage(index + 1)}>{index + 1}</button>)}</div></div></section>
+              <section className="panel table-panel user-table-panel"><div className="table-heading"><div><h2>游戏用户明细</h2><span>用于查询单个用户的用户投入、用户出奖、盈亏与返奖率表现。</span></div></div><div className="table-wrap"><table><thead><tr><th>用户ID</th><th>昵称</th><th>区域</th><th>活跃天数</th><th>游戏次数</th><th>用户投入</th><th>用户出奖</th><th>盈亏</th><th>返奖率</th><th>最近游戏时间</th><th>偏好列表</th><th>用户画像</th></tr></thead><tbody>{loading ? <tr><td colSpan={12}><div className="loading-state"><span />正在加载用户数据…</div></td></tr> : visibleUsers.length ? visibleUsers.map((row) => <tr key={row.id}><td><b>{row.id}</b></td><td>{row.nickname}</td><td>{row.region}</td><td>{row.days}天</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{profitLoss(row.net)}</td><td className={row.rate >= 95 ? "rate-good" : ""}>{row.rate.toFixed(2)}%</td><td>{row.latest}</td><td><button type="button" className="row-action" onClick={() => setPreferenceUser(row)}>偏好列表</button></td><td><button type="button" className="row-action" onClick={() => setProfileUser(row)}>用户画像</button></td></tr>) : <tr><td colSpan={12}><div className="empty-state"><b>未找到匹配用户</b><span>请检查用户 ID、区域或游戏条件。</span><button type="button" onClick={resetUsers}>清除筛选</button></div></td></tr>}</tbody></table></div><div className="table-footer"><span>盈亏 = 用户投入 - 用户出奖；返奖率 = 用户出奖 ÷ 用户投入 × 100%。</span><div className="pagination"><span>共 {format.format(filteredUsers.length)} 条 ｜ {pageSize} 条/页</span>{Array.from({ length: totalPages }, (_, index) => <button key={index + 1} type="button" className={page === index + 1 ? "active" : ""} onClick={() => setPage(index + 1)}>{index + 1}</button>)}</div></div></section>
             </>
           )}
         </section>
@@ -583,6 +631,7 @@ export default function Home() {
       )}
 
       {profileUser && <UserProfileModal user={profileUser} onClose={() => setProfileUser(null)} closeRef={profileCloseRef} />}
+      {preferenceUser && <UserPreferenceModal user={preferenceUser} onClose={() => setPreferenceUser(null)} closeRef={preferenceCloseRef} />}
 
       {exportConfirm && <div className="modal-layer"><button className="modal-backdrop" type="button" aria-label="关闭导出确认" onClick={() => !exporting && setExportConfirm(false)} /><section className="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="export-title"><span className="confirm-icon">⇩</span><h2 id="export-title">确认导出数据？</h2><p>将按当前筛选条件导出 {view === "overview" ? filteredGames.length : filteredUsers.length} 条{view === "overview" ? "游戏汇总" : "用户明细"}数据，文件格式为 CSV。</p><div><button type="button" disabled={exporting} onClick={() => setExportConfirm(false)}>取消</button><button type="button" className="success" disabled={exporting} onClick={performExport}>{exporting ? "生成中…" : "确认导出"}</button></div></section></div>}
       <div className={`toast ${toast ? "show" : ""}`} role="status" aria-live="polite"><span>✓</span>{toast}</div>
