@@ -19,6 +19,7 @@ type UserRow = {
 };
 
 type UserGamePreference = { game: string; input: number; plays: number };
+type PreferencePeriod = "本周" | "近半月" | "本月";
 
 type GameUserRanking = {
   id: string; nickname: string; region: string; plays: number;
@@ -125,13 +126,16 @@ function ProfitLoss({ value }: { value: number }) {
 
 const profitLoss = (value: number) => <ProfitLoss value={value} />;
 
-function buildUserGamePreferences(user: UserRow): UserGamePreference[] {
+const preferencePeriods: PreferencePeriod[] = ["本周", "近半月", "本月"];
+
+function buildUserGamePreferences(user: UserRow, period: PreferencePeriod): UserGamePreference[] {
   const gamesByPreference = [user.game, ...Object.keys(gameCatalog).filter((game) => game !== user.game)].slice(0, 3);
   const weights = [1, 0.58, 0.34];
+  const periodWeights: Record<PreferencePeriod, number[]> = { 本周: [0.42, 0.36, 0.25], 近半月: [0.72, 0.61, 0.48], 本月: [1, 0.91, 0.83] };
   return gamesByPreference.map((game, index) => ({
     game,
-    input: Math.round(user.input * weights[index]),
-    plays: Math.max(1, Math.round(user.plays * weights[index])),
+    input: Math.round(user.input * weights[index] * periodWeights[period][index]),
+    plays: Math.max(1, Math.round(user.plays * weights[index] * periodWeights[period][index])),
   })).sort((first, second) => second.input - first.input);
 }
 
@@ -313,21 +317,23 @@ function UserProfileModal({ user, onClose, closeRef }: { user: UserRow; onClose:
 }
 
 function UserPreferenceModal({ user, onClose, closeRef }: { user: UserRow; onClose: () => void; closeRef: React.RefObject<HTMLButtonElement | null> }) {
-  const preferences = buildUserGamePreferences(user);
+  const [period, setPeriod] = useState<PreferencePeriod>("本周");
+  const preferences = buildUserGamePreferences(user, period);
   const highestInput = preferences[0]?.input ?? 1;
   return (
     <div className="modal-layer user-profile-layer">
-      <button className="modal-backdrop" type="button" aria-label="关闭偏好列表" onClick={onClose} />
+      <button className="modal-backdrop" type="button" aria-label="关闭用户画像" onClick={onClose} />
       <section className="preference-modal" role="dialog" aria-modal="true" aria-labelledby="preference-list-title">
         <header className="user-profile-head">
-          <div className="user-profile-identity"><span>{user.nickname.slice(0, 1).toUpperCase()}</span><div><h2 id="preference-list-title">{user.nickname} 游戏偏好列表</h2><p>ID {user.id} · 按用户投入金币降序</p></div></div>
-          <button ref={closeRef} type="button" className="game-detail-close" aria-label="关闭偏好列表" onClick={onClose}><XIcon size={18} weight="bold" aria-hidden="true" /></button>
+          <div className="user-profile-identity"><span>{user.nickname.slice(0, 1).toUpperCase()}</span><div><h2 id="preference-list-title">{user.nickname} 游戏偏好排行榜</h2><p>ID {user.id} · {period}按用户投入金币降序</p></div></div>
+          <button ref={closeRef} type="button" className="game-detail-close" aria-label="关闭用户画像" onClick={onClose}><XIcon size={18} weight="bold" aria-hidden="true" /></button>
         </header>
         <div className="preference-list-content">
+          <div className="preference-period-tabs" role="tablist" aria-label="偏好排行榜统计周期">{preferencePeriods.map((item) => <button key={item} type="button" role="tab" aria-selected={period === item} className={period === item ? "active" : ""} onClick={() => setPeriod(item)}>{item}</button>)}</div>
           <div className="preference-list-head"><span>排名</span><span>游戏</span><span>用户投入</span><span>游戏次数</span></div>
           <ol className="preference-list">{preferences.map((item, index) => { const meta = gameCatalog[item.game]; const GameIcon = meta?.icon ?? GameControllerIcon; return <li key={item.game}><b className={index < 3 ? `top-${index + 1}` : ""}>{index + 1}</b><div className="preference-game"><i style={{ color: meta?.color, background: `${meta?.color ?? "#667085"}18` }}><GameIcon size={18} weight="duotone" aria-hidden="true" /></i><strong>{item.game}</strong></div><div className="preference-input"><span><Money value={item.input} /></span><i><em style={{ width: `${item.input / highestInput * 100}%` }} /></i></div><span>{format.format(item.plays)}</span></li>; })}</ol>
         </div>
-        <footer className="user-profile-footer"><span>偏好排行按当前统计周期内的用户投入金币汇总。</span><button type="button" onClick={onClose}>关闭</button></footer>
+        <footer className="user-profile-footer"><span>偏好排行按{period}内的用户投入金币汇总。</span><button type="button" onClick={onClose}>关闭</button></footer>
       </section>
     </div>
   );
@@ -586,7 +592,7 @@ export default function Home() {
                 <div className="filter-actions"><button type="button" className="primary" onClick={queryUsers}>查询</button><button type="button" onClick={resetUsers}>重置</button></div>
               </section>
 
-              <section className="panel table-panel user-table-panel"><div className="table-heading"><div><h2>游戏用户明细</h2><span>用于查询单个用户的用户投入、用户出奖、盈亏与返奖率表现。</span></div><span className="user-table-total">查询用户数 <b>{format.format(filteredUsers.length ? 86420 : 0)}</b></span></div><div className="table-wrap"><table><thead><tr><th>用户ID</th><th>昵称</th><th>区域</th><th>活跃天数</th><th>游戏次数</th><th>用户投入</th><th>用户出奖</th><th>盈亏</th><th>返奖率</th><th>最近游戏时间</th><th>偏好列表</th></tr></thead><tbody>{loading ? <tr><td colSpan={11}><div className="loading-state"><span />正在加载用户数据…</div></td></tr> : visibleUsers.length ? visibleUsers.map((row) => <tr key={row.id}><td><b>{row.id}</b></td><td>{row.nickname}</td><td>{row.region}</td><td>{row.days}天</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{profitLoss(row.net)}</td><td className={row.rate >= 95 ? "rate-good" : ""}>{row.rate.toFixed(2)}%</td><td>{row.latest}</td><td><button type="button" className="row-action" onClick={() => setPreferenceUser(row)}>偏好列表</button></td></tr>) : <tr><td colSpan={11}><div className="empty-state"><b>未找到匹配用户</b><span>请检查用户 ID、区域或游戏条件。</span><button type="button" onClick={resetUsers}>清除筛选</button></div></td></tr>}</tbody></table></div><div className="table-footer"><span>盈亏 = 用户投入 - 用户出奖；返奖率 = 用户出奖 ÷ 用户投入 × 100%。</span><div className="pagination"><span>共 {format.format(filteredUsers.length)} 条 ｜ {pageSize} 条/页</span>{Array.from({ length: totalPages }, (_, index) => <button key={index + 1} type="button" className={page === index + 1 ? "active" : ""} onClick={() => setPage(index + 1)}>{index + 1}</button>)}</div></div></section>
+              <section className="panel table-panel user-table-panel"><div className="table-heading"><div><h2>游戏用户明细</h2><span>用于查询单个用户的用户投入、用户出奖、盈亏与返奖率表现。</span></div><span className="user-table-total">查询用户数 <b>{format.format(filteredUsers.length ? 86420 : 0)}</b></span></div><div className="table-wrap"><table><thead><tr><th>用户ID</th><th>昵称</th><th>区域</th><th>活跃天数</th><th>游戏次数</th><th>用户投入</th><th>用户出奖</th><th>盈亏</th><th>返奖率</th><th>最近游戏时间</th><th>用户画像</th></tr></thead><tbody>{loading ? <tr><td colSpan={11}><div className="loading-state"><span />正在加载用户数据…</div></td></tr> : visibleUsers.length ? visibleUsers.map((row) => <tr key={row.id}><td><b>{row.id}</b></td><td>{row.nickname}</td><td>{row.region}</td><td>{row.days}天</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{profitLoss(row.net)}</td><td className={row.rate >= 95 ? "rate-good" : ""}>{row.rate.toFixed(2)}%</td><td>{row.latest}</td><td><button type="button" className="row-action" onClick={() => setPreferenceUser(row)}>用户画像</button></td></tr>) : <tr><td colSpan={11}><div className="empty-state"><b>未找到匹配用户</b><span>请检查用户 ID、区域或游戏条件。</span><button type="button" onClick={resetUsers}>清除筛选</button></div></td></tr>}</tbody></table></div><div className="table-footer"><span>盈亏 = 用户投入 - 用户出奖；返奖率 = 用户出奖 ÷ 用户投入 × 100%。</span><div className="pagination"><span>共 {format.format(filteredUsers.length)} 条 ｜ {pageSize} 条/页</span>{Array.from({ length: totalPages }, (_, index) => <button key={index + 1} type="button" className={page === index + 1 ? "active" : ""} onClick={() => setPage(index + 1)}>{index + 1}</button>)}</div></div></section>
             </>
           )}
         </section>
