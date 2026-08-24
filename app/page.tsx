@@ -416,7 +416,20 @@ export default function Home() {
   const DetailGameIcon = detailGameMeta?.icon ?? GameControllerIcon;
 
   function switchView(next: View) {
+    if (next === "users" && region !== "全部区域") {
+      setUserRegion(region);
+      setAppliedUser((current) => ({ ...current, region }));
+    }
     setView(next); setPage(1);
+  }
+
+  function selectOverviewRegion(nextRegion: string) {
+    setRegion(nextRegion);
+    if (nextRegion !== "全部区域") {
+      setUserRegion(nextRegion);
+      setAppliedUser((current) => ({ ...current, region: nextRegion }));
+      setPage(1);
+    }
   }
 
   function queryUsers() {
@@ -492,7 +505,7 @@ export default function Home() {
           {view === "overview" ? (
             <>
               <section className="panel filter-panel overview-filters">
-                <FilterField label="区域"><select value={region} onChange={(event) => setRegion(event.target.value)}><option>全部区域</option>{regions.map((item) => <option key={item}>{item}</option>)}</select></FilterField>
+                <FilterField label="区域"><select value={region} onChange={(event) => selectOverviewRegion(event.target.value)}><option>全部区域</option>{regions.map((item) => <option key={item}>{item}</option>)}</select></FilterField>
                 <div className="filter-field game-filter-field"><span>游戏</span><GameSelector value={game} onChange={setGame} /></div>
                 <FilterField label="用户ID"><input inputMode="numeric" placeholder="请输入完整用户ID" value={userId} onChange={(event) => setUserId(event.target.value.replace(/\D/g, ""))} onKeyDown={(event) => { if (event.key === "Enter") simulateQuery(); }} /></FilterField>
                 <FilterField label="统计日期" wide><input value="2026-07-01  -  2026-07-17" readOnly /></FilterField>
