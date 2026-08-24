@@ -79,7 +79,7 @@ const users: UserRow[] = [
 
 const emptyDetailMetricFilters = (): DetailMetricFilters => ({ playsMin: "", playsMax: "", inputMin: "", inputMax: "", outputMin: "", outputMax: "", netMin: "", netMax: "", rateMin: "", rateMax: "" });
 const inNumberRange = (value: number, minimum: string, maximum: string) => (minimum === "" || value >= Number(minimum)) && (maximum === "" || value <= Number(maximum));
-const detailSortLabels: Record<DetailSortKey, string> = { plays: "游戏下注次数", input: "用户投入", output: "用户出奖", net: "净值", rate: "返奖率" };
+const detailSortLabels: Record<DetailSortKey, string> = { plays: "游戏下注次数", input: "用户投入", output: "用户出奖", net: "当日盈亏", rate: "返奖率" };
 
 function buildGameUserRankings(gameName: string): GameUserRanking[] {
   const scale = 0.12;
@@ -122,6 +122,13 @@ function Money({ value }: { value: number }) {
 }
 
 const money = (value: number) => <Money value={value} />;
+
+function ProfitLoss({ value }: { value: number }) {
+  const loss = value < 0;
+  return <span className={`profit-loss ${loss ? "loss" : ""}`} aria-label={`${loss ? "-" : ""}${moneyText(Math.abs(value))} 金币`}>{loss && <span aria-hidden="true">−</span>}<Money value={Math.abs(value)} /></span>;
+}
+
+const profitLoss = (value: number) => <ProfitLoss value={value} />;
 
 function MetricCard({ mark, title, value, note, tone, valueTitle, valueHint }: { mark: string; title: string; value: React.ReactNode; note: string; tone: string; valueTitle?: string; valueHint?: string }) {
   return <article className="metric-card"><span className={`metric-icon ${tone}`}>{mark}</span><div className="metric-copy"><p>{title}</p><small>{note}</small></div><div className="metric-value-block"><strong title={valueTitle}>{value}</strong>{valueHint && <small className="metric-value-hint">{valueHint}</small>}</div></article>;
@@ -563,7 +570,7 @@ export default function Home() {
                 <label><span>游戏下注次数</span><i><input type="number" inputMode="numeric" placeholder="最小" value={detailMetricFilters.playsMin} onChange={(event) => updateDetailMetricFilter("playsMin", event.target.value)} /><em>—</em><input type="number" inputMode="numeric" placeholder="最大" value={detailMetricFilters.playsMax} onChange={(event) => updateDetailMetricFilter("playsMax", event.target.value)} /></i></label>
                 <label><span>用户投入</span><i><input type="number" inputMode="numeric" placeholder="最小" value={detailMetricFilters.inputMin} onChange={(event) => updateDetailMetricFilter("inputMin", event.target.value)} /><em>—</em><input type="number" inputMode="numeric" placeholder="最大" value={detailMetricFilters.inputMax} onChange={(event) => updateDetailMetricFilter("inputMax", event.target.value)} /></i></label>
                 <label><span>用户出奖</span><i><input type="number" inputMode="numeric" placeholder="最小" value={detailMetricFilters.outputMin} onChange={(event) => updateDetailMetricFilter("outputMin", event.target.value)} /><em>—</em><input type="number" inputMode="numeric" placeholder="最大" value={detailMetricFilters.outputMax} onChange={(event) => updateDetailMetricFilter("outputMax", event.target.value)} /></i></label>
-                <label><span>净值</span><i><input type="number" inputMode="numeric" placeholder="最小" value={detailMetricFilters.netMin} onChange={(event) => updateDetailMetricFilter("netMin", event.target.value)} /><em>—</em><input type="number" inputMode="numeric" placeholder="最大" value={detailMetricFilters.netMax} onChange={(event) => updateDetailMetricFilter("netMax", event.target.value)} /></i></label>
+                <label><span>当日盈亏</span><i><input type="number" inputMode="numeric" placeholder="最小" value={detailMetricFilters.netMin} onChange={(event) => updateDetailMetricFilter("netMin", event.target.value)} /><em>—</em><input type="number" inputMode="numeric" placeholder="最大" value={detailMetricFilters.netMax} onChange={(event) => updateDetailMetricFilter("netMax", event.target.value)} /></i></label>
                 <label><span>返奖率 (%)</span><i><input type="number" inputMode="decimal" placeholder="最小" value={detailMetricFilters.rateMin} onChange={(event) => updateDetailMetricFilter("rateMin", event.target.value)} /><em>—</em><input type="number" inputMode="decimal" placeholder="最大" value={detailMetricFilters.rateMax} onChange={(event) => updateDetailMetricFilter("rateMax", event.target.value)} /></i></label>
                 <button type="button" onClick={() => setDetailMetricFilters(emptyDetailMetricFilters())}>重置</button>
               </div>
@@ -574,18 +581,18 @@ export default function Home() {
               <div><span>游戏下注次数</span><strong>{format.format(detailTotals.plays)}</strong></div>
               <div><span>用户投入</span><strong>{money(detailTotals.input)}</strong></div>
               <div><span>用户出奖</span><strong>{money(detailTotals.output)}</strong></div>
-              <div><span>净值</span><strong>{money(detailTotals.net)}</strong></div>
+              <div><span>当日盈亏</span><strong>{profitLoss(detailTotals.net)}</strong></div>
               <div><span>返奖率</span><strong>{detailTotals.rate.toFixed(2)}%</strong></div>
             </div>
 
             <div className="game-detail-table-wrap">
               <table className="game-detail-table">
-                <thead><tr><th>用户信息</th><th>游戏下注次数</th><th>用户投入</th><th>用户出奖</th><th>净值</th><th>返奖率</th></tr></thead>
-                <tbody>{detailRankings.length ? detailRankings.map((row, index) => <tr key={row.id}><td><div className="game-detail-user"><span className={`game-detail-rank rank-${index + 1}`}>{index + 1}</span><span className="game-detail-user-avatar">{row.nickname.slice(0, 1).toUpperCase()}</span><span className="game-detail-user-copy"><strong>{row.nickname}</strong><small>ID {row.id} · {row.region}</small></span></div></td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{money(row.net)}</td><td className={row.rate >= 95 ? "rate-good" : ""}>{row.rate.toFixed(2)}%</td></tr>) : <tr><td colSpan={6}><div className="game-detail-empty"><b>暂无符合条件的用户</b><span>请调整数值区间后重试</span></div></td></tr>}</tbody>
+                <thead><tr><th>用户信息</th><th>游戏下注次数</th><th>用户投入</th><th>用户出奖</th><th>当日盈亏</th><th>返奖率</th></tr></thead>
+                <tbody>{detailRankings.length ? detailRankings.map((row, index) => <tr key={row.id}><td><div className="game-detail-user"><span className={`game-detail-rank rank-${index + 1}`}>{index + 1}</span><span className="game-detail-user-avatar">{row.nickname.slice(0, 1).toUpperCase()}</span><span className="game-detail-user-copy"><strong>{row.nickname}</strong><small>ID {row.id} · {row.region}</small></span></div></td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{profitLoss(row.net)}</td><td className={row.rate >= 95 ? "rate-good" : ""}>{row.rate.toFixed(2)}%</td></tr>) : <tr><td colSpan={6}><div className="game-detail-empty"><b>暂无符合条件的用户</b><span>请调整数值区间后重试</span></div></td></tr>}</tbody>
               </table>
             </div>
 
-            <footer className="game-detail-footer"><span>净值 = 用户投入 - 用户出奖；返奖率 = 用户出奖 ÷ 用户投入 × 100%。</span><button type="button" onClick={() => setDetailGame(null)}>关闭</button></footer>
+            <footer className="game-detail-footer"><span>当日盈亏 = 用户投入 - 用户出奖；返奖率 = 用户出奖 ÷ 用户投入 × 100%。</span><button type="button" onClick={() => setDetailGame(null)}>关闭</button></footer>
           </section>
         </div>
       )}

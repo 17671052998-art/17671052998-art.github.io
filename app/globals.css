@@ -154,6 +154,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .metric-card small.metric-value-hint { margin-top: 1px; color: #98a5b7; line-height: 14px; }
 .money-value { display: inline-flex; align-items: center; gap: .2em; white-space: nowrap; }
 .money-value > img { width: 1em; height: 1em; flex: 0 0 1em; object-fit: contain; transform: translateY(-.03em); }
+.profit-loss { display: inline-flex; align-items: center; gap: .12em; white-space: nowrap; }.profit-loss.loss { color: #dc2626; }.profit-loss.loss .money-value { color: inherit; }
 
 .analytics-row { margin-top: 16px; }
 .regional-statistics-panel { padding: 15px 18px 10px; }
