@@ -79,7 +79,7 @@ const users: UserRow[] = [
 
 const emptyDetailMetricFilters = (): DetailMetricFilters => ({ playsMin: "", playsMax: "", inputMin: "", inputMax: "", outputMin: "", outputMax: "", netMin: "", netMax: "", rateMin: "", rateMax: "" });
 const inNumberRange = (value: number, minimum: string, maximum: string) => (minimum === "" || value >= Number(minimum)) && (maximum === "" || value <= Number(maximum));
-const detailSortLabels: Record<DetailSortKey, string> = { plays: "游戏下注次数", input: "用户投入", output: "用户出奖", net: "当日盈亏", rate: "返奖率" };
+const detailSortLabels: Record<DetailSortKey, string> = { plays: "游戏下注次数", input: "用户投入", output: "用户出奖", net: "盈亏", rate: "返奖率" };
 
 function buildGameUserRankings(gameName: string): GameUserRanking[] {
   const scale = 0.12;
@@ -298,7 +298,7 @@ function UserProfileModal({ user, onClose, closeRef }: { user: UserRow; onClose:
 
           <div className="profile-charts">
             <article className="profile-chart-card"><div className="profile-chart-title"><h3>游戏行为画像</h3><span>按当前统计周期</span></div><div className="profile-radar-wrap"><svg className="profile-radar" viewBox="0 0 200 200" role="img" aria-label="活跃度、游戏频次和返奖表现雷达图"><polygon points="100,39 47,130.5 153,130.5" /><polygon points="100,69.5 73.5,115.25 126.5,115.25" /><line x1="100" y1="39" x2="100" y2="161" /><line x1="47" y1="130.5" x2="153" y2="130.5" /><line x1="47" y1="130.5" x2="100" y2="39" /><line x1="153" y1="130.5" x2="100" y2="39" /><polygon className="profile-radar-area" points={radarPoints} />{dimensions.map((dimension, index) => { const [x, y] = point(dimension.value, index).split(","); return <circle key={dimension.label} cx={x} cy={y} r="4" />; })}</svg><div className="profile-radar-labels">{dimensions.map((dimension) => <span key={dimension.label}><b>{dimension.label}</b><small>{dimension.detail}</small></span>)}</div></div></article>
-            <article className="profile-chart-card"><div className="profile-chart-title"><h3>投入与出奖对比</h3><span>返奖率 {user.rate.toFixed(2)}%</span></div><div className="profile-fund-bars"><div><span>用户投入</span><b><Money value={user.input} /></b><i><em className="input" style={{ width: "100%" }} /></i></div><div><span>用户出奖</span><b><Money value={user.output} /></b><i><em className="output" style={{ width: `${user.rate}%` }} /></i></div><div className="profile-net"><span>净值</span><strong><Money value={user.net} /></strong><small>用户投入 − 用户出奖</small></div></div></article>
+            <article className="profile-chart-card"><div className="profile-chart-title"><h3>投入与出奖对比</h3><span>返奖率 {user.rate.toFixed(2)}%</span></div><div className="profile-fund-bars"><div><span>用户投入</span><b><Money value={user.input} /></b><i><em className="input" style={{ width: "100%" }} /></i></div><div><span>用户出奖</span><b><Money value={user.output} /></b><i><em className="output" style={{ width: `${user.rate}%` }} /></i></div><div className="profile-net"><span>盈亏</span><strong><ProfitLoss value={user.net} /></strong><small>用户投入 − 用户出奖</small></div></div></article>
           </div>
         </div>
         <footer className="user-profile-footer"><span>画像数据基于当前用户的游戏明细统计。</span><button type="button" onClick={onClose}>关闭</button></footer>
@@ -315,8 +315,8 @@ export default function Home() {
   const [userRegion, setUserRegion] = useState("全部区域");
   const [userGame, setUserGame] = useState(vendorAllValue("热游"));
   const [userKeyword, setUserKeyword] = useState("");
-  const [sort, setSort] = useState("净值降序");
-  const [appliedUser, setAppliedUser] = useState({ keyword: "", region: "全部区域", game: vendorAllValue("热游"), sort: "净值降序" });
+  const [sort, setSort] = useState("盈亏降序");
+  const [appliedUser, setAppliedUser] = useState({ keyword: "", region: "全部区域", game: vendorAllValue("热游"), sort: "盈亏降序" });
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -444,8 +444,8 @@ export default function Home() {
   }
 
   function resetUsers() {
-    setUserKeyword(""); setUserRegion("全部区域"); setUserGame(vendorAllValue("热游")); setSort("净值降序");
-    setAppliedUser({ keyword: "", region: "全部区域", game: vendorAllValue("热游"), sort: "净值降序" }); setPage(1); notify("筛选条件已重置");
+    setUserKeyword(""); setUserRegion("全部区域"); setUserGame(vendorAllValue("热游")); setSort("盈亏降序");
+    setAppliedUser({ keyword: "", region: "全部区域", game: vendorAllValue("热游"), sort: "盈亏降序" }); setPage(1); notify("筛选条件已重置");
   }
 
   function openGameDetails(gameRow: GameRow) {
@@ -463,7 +463,7 @@ export default function Home() {
     setExporting(true);
     setTimeout(() => {
       const rows = view === "overview" ? filteredGames : filteredUsers;
-      const header = view === "overview" ? ["游戏", "区域", "活跃用户", "游戏次数", "用户投入", "用户出奖", "净值", "返奖率", "热度"] : ["用户ID", "昵称", "区域", "偏好游戏", "活跃天数", "游戏次数", "用户投入", "用户出奖", "净值", "返奖率", "最近游戏时间", "偏好排名"];
+      const header = view === "overview" ? ["游戏", "区域", "活跃用户", "游戏次数", "用户投入", "用户出奖", "盈亏", "返奖率", "热度"] : ["用户ID", "昵称", "区域", "偏好游戏", "活跃天数", "游戏次数", "用户投入", "用户出奖", "盈亏", "返奖率", "最近游戏时间", "偏好排名"];
       const exportRows = view === "overview"
         ? (rows as GameRow[]).map((row) => [row.game, row.region, row.active, row.plays, row.input, row.output, row.net, row.rate, row.rank])
         : (rows as UserRow[]).map((row) => [row.id, row.nickname, row.region, row.game, row.days, row.plays, row.input, row.output, row.net, row.rate, row.latest, row.rank]);
@@ -505,7 +505,7 @@ export default function Home() {
         <div className="page-tabs"><button type="button">home</button><button type="button" className="active"><span>●</span> 游戏数据报表 <i>×</i></button></div>
 
         <section className="page-content">
-          <div className="page-title"><div><h1>游戏数据报表</h1><p>按区域、游戏或用户维度查询用户投入、用户出奖、返奖率与净值。</p></div><button type="button" className="refresh-link" onClick={() => simulateQuery("数据刷新完成")}>↻ 刷新数据</button></div>
+          <div className="page-title"><div><h1>游戏数据报表</h1><p>按区域、游戏或用户维度查询用户投入、用户出奖、返奖率与盈亏。</p></div><button type="button" className="refresh-link" onClick={() => simulateQuery("数据刷新完成")}>↻ 刷新数据</button></div>
           <div className="business-tabs" role="tablist"><button role="tab" aria-selected={view === "overview"} className={view === "overview" ? "active" : ""} onClick={() => switchView("overview")}>总览报表</button><button role="tab" aria-selected={view === "users"} className={view === "users" ? "active" : ""} onClick={() => switchView("users")}>游戏用户列表</button></div>
 
           {view === "overview" ? (
@@ -523,7 +523,7 @@ export default function Home() {
                 <MetricCard mark="活" title="活跃游戏用户" value="86,420" note="较上周期 +12.6%" tone="blue" />
                 <MetricCard mark="投" title="用户投入" value={<Money value={16_480_200} />} valueTitle={`完整金额：${moneyText(16_480_200)} 金币`} valueHint={amountUnitText(16_480_200)} note="用户实际投入金额" tone="amber" />
                 <MetricCard mark="奖" title="用户出奖" value={<Money value={14_998_360} />} valueTitle={`完整金额：${moneyText(14_998_360)} 金币`} valueHint={amountUnitText(14_998_360)} note="游戏返奖/派奖金额" tone="red" />
-                <MetricCard mark="净" title="净值" value={<Money value={1_481_840} />} valueTitle={`完整金额：${moneyText(1_481_840)} 金币`} valueHint={amountUnitText(1_481_840)} note="用户投入 - 用户出奖" tone="cyan" />
+                <MetricCard mark="盈" title="盈亏" value={<ProfitLoss value={1_481_840} />} valueTitle={`完整金额：${moneyText(1_481_840)} 金币`} valueHint={amountUnitText(1_481_840)} note="用户投入 - 用户出奖" tone="cyan" />
                 <MetricCard mark="返" title="返奖率" value="91.01%" note="用户出奖 ÷ 用户投入 × 100%" tone="green" />
               </section>
 
@@ -531,7 +531,7 @@ export default function Home() {
                 <article className="panel regional-statistics-panel"><div className="panel-title"><h2>游戏区域资金统计</h2><span>{gameFilterVendor(game) ? `按区域汇总${gameFilterLabel(game)}的用户投入与用户出奖` : `${game} 各区域用户投入与用户出奖`}</span></div><div className="region-stat-head" aria-hidden="true"><span>排名</span><span>区域</span><span>游戏</span><span>用户投入</span><span>用户出奖</span></div><div className="region-stat-list">{regionInvestmentStats.length ? regionInvestmentStats.map((item, index) => <div className="region-stat-row" key={item.region}><b className={index === 0 ? "first" : ""}>{index + 1}</b><strong>{item.region}</strong><span>{gameFilterLabel(game)}</span><em title={`${moneyText(item.input)} 金币`}>{money(item.input)}</em><em title={`${moneyText(item.output)} 金币`}>{money(item.output)}</em></div>) : <div className="region-stat-empty">暂无匹配区域数据</div>}</div></article>
               </section>
 
-              <section className="panel table-panel"><div className="table-heading"><div><h2>游戏汇总数据</h2><span>悬浮问号查看游戏资料，点击“用户明细”查看该游戏的用户排行</span></div><button type="button" className="table-tool" onClick={() => setExportConfirm(true)}>⇩ 导出当前结果</button></div><div className="table-wrap game-table-wrap"><table><thead><tr><th>游戏</th><th>区域</th><th>活跃用户</th><th>游戏次数</th><th>用户投入</th><th>用户出奖</th><th>净值</th><th>返奖率</th><th>热度</th><th>操作</th></tr></thead><tbody>{loading ? <tr><td colSpan={10}><div className="loading-state"><span />正在加载报表数据…</div></td></tr> : filteredGames.length ? filteredGames.slice(0, 4).map((row) => <tr key={`${row.region}-${row.game}`}><td><GameCell name={row.game} /></td><td>{row.region}</td><td>{format.format(row.active)}</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{money(row.net)}</td><td>{row.rate.toFixed(2)}%</td><td>{row.rank}</td><td><button type="button" className="row-action" onClick={() => openGameDetails(row)}>用户明细</button></td></tr>) : <tr><td colSpan={10}><div className="empty-state"><b>未找到匹配数据</b><span>请调整区域、游戏或用户筛选条件后重试。</span><button type="button" onClick={resetOverview}>清除筛选</button></div></td></tr>}</tbody></table></div><div className="pagination"><span>共 {filteredGames.length} 条 ｜ 20 条/页</span><button className="active" type="button">1</button><button type="button" disabled>2</button></div></section>
+              <section className="panel table-panel"><div className="table-heading"><div><h2>游戏汇总数据</h2><span>悬浮问号查看游戏资料，点击“用户明细”查看该游戏的用户排行</span></div><button type="button" className="table-tool" onClick={() => setExportConfirm(true)}>⇩ 导出当前结果</button></div><div className="table-wrap game-table-wrap"><table><thead><tr><th>游戏</th><th>区域</th><th>活跃用户</th><th>游戏次数</th><th>用户投入</th><th>用户出奖</th><th>盈亏</th><th>返奖率</th><th>热度</th><th>操作</th></tr></thead><tbody>{loading ? <tr><td colSpan={10}><div className="loading-state"><span />正在加载报表数据…</div></td></tr> : filteredGames.length ? filteredGames.slice(0, 4).map((row) => <tr key={`${row.region}-${row.game}`}><td><GameCell name={row.game} /></td><td>{row.region}</td><td>{format.format(row.active)}</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{profitLoss(row.net)}</td><td>{row.rate.toFixed(2)}%</td><td>{row.rank}</td><td><button type="button" className="row-action" onClick={() => openGameDetails(row)}>用户明细</button></td></tr>) : <tr><td colSpan={10}><div className="empty-state"><b>未找到匹配数据</b><span>请调整区域、游戏或用户筛选条件后重试。</span><button type="button" onClick={resetOverview}>清除筛选</button></div></td></tr>}</tbody></table></div><div className="pagination"><span>共 {filteredGames.length} 条 ｜ 20 条/页</span><button className="active" type="button">1</button><button type="button" disabled>2</button></div></section>
             </>
           ) : (
             <>
@@ -540,13 +540,13 @@ export default function Home() {
                 <FilterField label="区域"><select value={userRegion} onChange={(event) => setUserRegion(event.target.value)}><option>全部区域</option>{regions.map((item) => <option key={item}>{item}</option>)}</select></FilterField>
                 <div className="filter-field game-filter-field"><span>游戏</span><GameSelector value={userGame} onChange={setUserGame} /></div>
                 <FilterField label="统计日期" wide><input value="2026-07-01  -  2026-07-17" readOnly /></FilterField>
-                <FilterField label="排序方式"><select value={sort} onChange={(event) => setSort(event.target.value)}><option>净值降序</option><option>游戏次数降序</option><option>最近游戏时间</option></select></FilterField>
+                <FilterField label="排序方式"><select value={sort} onChange={(event) => setSort(event.target.value)}><option>盈亏降序</option><option>游戏次数降序</option><option>最近游戏时间</option></select></FilterField>
                 <div className="filter-actions"><button type="button" className="primary" onClick={queryUsers}>查询</button><button type="button" onClick={resetUsers}>重置</button></div>
               </section>
 
               <section className="user-metrics"><MetricCard mark="查" title="查询用户数" value={format.format(filteredUsers.length ? 86420 : 0)} note="当前筛选条件下用户数" tone="blue" /><MetricCard mark="高" title="高频游戏用户" value="12,680" note="近7日游戏 ≥ 35次" tone="violet" /><MetricCard mark="人" title="人均用户投入" value={<Money value={190.70} />} note="总用户投入 ÷ 投入用户数" tone="amber" /><MetricCard mark="返" title="平均返奖率" value="89.64%" note="用户出奖 ÷ 用户投入" tone="green" /></section>
 
-              <section className="panel table-panel user-table-panel"><div className="table-heading"><div><h2>游戏用户明细</h2><span>用于查询单个用户的用户投入、用户出奖、净值与返奖率表现。</span></div></div><div className="table-wrap"><table><thead><tr><th>用户ID</th><th>昵称</th><th>区域</th><th>活跃天数</th><th>游戏次数</th><th>用户投入</th><th>用户出奖</th><th>净值</th><th>返奖率</th><th>最近游戏时间</th><th>用户画像</th></tr></thead><tbody>{loading ? <tr><td colSpan={11}><div className="loading-state"><span />正在加载用户数据…</div></td></tr> : visibleUsers.length ? visibleUsers.map((row) => <tr key={row.id}><td><b>{row.id}</b></td><td>{row.nickname}</td><td>{row.region}</td><td>{row.days}天</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{money(row.net)}</td><td className={row.rate >= 95 ? "rate-good" : ""}>{row.rate.toFixed(2)}%</td><td>{row.latest}</td><td><button type="button" className="row-action" onClick={() => setProfileUser(row)}>用户画像</button></td></tr>) : <tr><td colSpan={11}><div className="empty-state"><b>未找到匹配用户</b><span>请检查用户 ID、区域或游戏条件。</span><button type="button" onClick={resetUsers}>清除筛选</button></div></td></tr>}</tbody></table></div><div className="table-footer"><span>净值 = 用户投入 - 用户出奖；返奖率 = 用户出奖 ÷ 用户投入 × 100%。</span><div className="pagination"><span>共 {format.format(filteredUsers.length)} 条 ｜ {pageSize} 条/页</span>{Array.from({ length: totalPages }, (_, index) => <button key={index + 1} type="button" className={page === index + 1 ? "active" : ""} onClick={() => setPage(index + 1)}>{index + 1}</button>)}</div></div></section>
+              <section className="panel table-panel user-table-panel"><div className="table-heading"><div><h2>游戏用户明细</h2><span>用于查询单个用户的用户投入、用户出奖、盈亏与返奖率表现。</span></div></div><div className="table-wrap"><table><thead><tr><th>用户ID</th><th>昵称</th><th>区域</th><th>活跃天数</th><th>游戏次数</th><th>用户投入</th><th>用户出奖</th><th>盈亏</th><th>返奖率</th><th>最近游戏时间</th><th>用户画像</th></tr></thead><tbody>{loading ? <tr><td colSpan={11}><div className="loading-state"><span />正在加载用户数据…</div></td></tr> : visibleUsers.length ? visibleUsers.map((row) => <tr key={row.id}><td><b>{row.id}</b></td><td>{row.nickname}</td><td>{row.region}</td><td>{row.days}天</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{profitLoss(row.net)}</td><td className={row.rate >= 95 ? "rate-good" : ""}>{row.rate.toFixed(2)}%</td><td>{row.latest}</td><td><button type="button" className="row-action" onClick={() => setProfileUser(row)}>用户画像</button></td></tr>) : <tr><td colSpan={11}><div className="empty-state"><b>未找到匹配用户</b><span>请检查用户 ID、区域或游戏条件。</span><button type="button" onClick={resetUsers}>清除筛选</button></div></td></tr>}</tbody></table></div><div className="table-footer"><span>盈亏 = 用户投入 - 用户出奖；返奖率 = 用户出奖 ÷ 用户投入 × 100%。</span><div className="pagination"><span>共 {format.format(filteredUsers.length)} 条 ｜ {pageSize} 条/页</span>{Array.from({ length: totalPages }, (_, index) => <button key={index + 1} type="button" className={page === index + 1 ? "active" : ""} onClick={() => setPage(index + 1)}>{index + 1}</button>)}</div></div></section>
             </>
           )}
         </section>
@@ -570,7 +570,7 @@ export default function Home() {
                 <label><span>游戏下注次数</span><i><input type="number" inputMode="numeric" placeholder="最小" value={detailMetricFilters.playsMin} onChange={(event) => updateDetailMetricFilter("playsMin", event.target.value)} /><em>—</em><input type="number" inputMode="numeric" placeholder="最大" value={detailMetricFilters.playsMax} onChange={(event) => updateDetailMetricFilter("playsMax", event.target.value)} /></i></label>
                 <label><span>用户投入</span><i><input type="number" inputMode="numeric" placeholder="最小" value={detailMetricFilters.inputMin} onChange={(event) => updateDetailMetricFilter("inputMin", event.target.value)} /><em>—</em><input type="number" inputMode="numeric" placeholder="最大" value={detailMetricFilters.inputMax} onChange={(event) => updateDetailMetricFilter("inputMax", event.target.value)} /></i></label>
                 <label><span>用户出奖</span><i><input type="number" inputMode="numeric" placeholder="最小" value={detailMetricFilters.outputMin} onChange={(event) => updateDetailMetricFilter("outputMin", event.target.value)} /><em>—</em><input type="number" inputMode="numeric" placeholder="最大" value={detailMetricFilters.outputMax} onChange={(event) => updateDetailMetricFilter("outputMax", event.target.value)} /></i></label>
-                <label><span>当日盈亏</span><i><input type="number" inputMode="numeric" placeholder="最小" value={detailMetricFilters.netMin} onChange={(event) => updateDetailMetricFilter("netMin", event.target.value)} /><em>—</em><input type="number" inputMode="numeric" placeholder="最大" value={detailMetricFilters.netMax} onChange={(event) => updateDetailMetricFilter("netMax", event.target.value)} /></i></label>
+                <label><span>盈亏</span><i><input type="number" inputMode="numeric" placeholder="最小" value={detailMetricFilters.netMin} onChange={(event) => updateDetailMetricFilter("netMin", event.target.value)} /><em>—</em><input type="number" inputMode="numeric" placeholder="最大" value={detailMetricFilters.netMax} onChange={(event) => updateDetailMetricFilter("netMax", event.target.value)} /></i></label>
                 <label><span>返奖率 (%)</span><i><input type="number" inputMode="decimal" placeholder="最小" value={detailMetricFilters.rateMin} onChange={(event) => updateDetailMetricFilter("rateMin", event.target.value)} /><em>—</em><input type="number" inputMode="decimal" placeholder="最大" value={detailMetricFilters.rateMax} onChange={(event) => updateDetailMetricFilter("rateMax", event.target.value)} /></i></label>
                 <button type="button" onClick={() => setDetailMetricFilters(emptyDetailMetricFilters())}>重置</button>
               </div>
@@ -581,18 +581,18 @@ export default function Home() {
               <div><span>游戏下注次数</span><strong>{format.format(detailTotals.plays)}</strong></div>
               <div><span>用户投入</span><strong>{money(detailTotals.input)}</strong></div>
               <div><span>用户出奖</span><strong>{money(detailTotals.output)}</strong></div>
-              <div><span>当日盈亏</span><strong>{profitLoss(detailTotals.net)}</strong></div>
+              <div><span>盈亏</span><strong>{profitLoss(detailTotals.net)}</strong></div>
               <div><span>返奖率</span><strong>{detailTotals.rate.toFixed(2)}%</strong></div>
             </div>
 
             <div className="game-detail-table-wrap">
               <table className="game-detail-table">
-                <thead><tr><th>用户信息</th><th>游戏下注次数</th><th>用户投入</th><th>用户出奖</th><th>当日盈亏</th><th>返奖率</th></tr></thead>
+                <thead><tr><th>用户信息</th><th>游戏下注次数</th><th>用户投入</th><th>用户出奖</th><th>盈亏</th><th>返奖率</th></tr></thead>
                 <tbody>{detailRankings.length ? detailRankings.map((row, index) => <tr key={row.id}><td><div className="game-detail-user"><span className={`game-detail-rank rank-${index + 1}`}>{index + 1}</span><span className="game-detail-user-avatar">{row.nickname.slice(0, 1).toUpperCase()}</span><span className="game-detail-user-copy"><strong>{row.nickname}</strong><small>ID {row.id} · {row.region}</small></span></div></td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{profitLoss(row.net)}</td><td className={row.rate >= 95 ? "rate-good" : ""}>{row.rate.toFixed(2)}%</td></tr>) : <tr><td colSpan={6}><div className="game-detail-empty"><b>暂无符合条件的用户</b><span>请调整数值区间后重试</span></div></td></tr>}</tbody>
               </table>
             </div>
 
-            <footer className="game-detail-footer"><span>当日盈亏 = 用户投入 - 用户出奖；返奖率 = 用户出奖 ÷ 用户投入 × 100%。</span><button type="button" onClick={() => setDetailGame(null)}>关闭</button></footer>
+            <footer className="game-detail-footer"><span>盈亏 = 用户投入 - 用户出奖；返奖率 = 用户出奖 ÷ 用户投入 × 100%。</span><button type="button" onClick={() => setDetailGame(null)}>关闭</button></footer>
           </section>
         </div>
       )}
