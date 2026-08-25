@@ -130,9 +130,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .game-radio { width: 17px; height: 17px; display: grid; place-items: center; border: 1px solid #c8d2df; border-radius: 50%; color: white; background: white; }
 .vendor-game-list > button.selected .game-radio { border-color: var(--primary); background: var(--primary); }
 .filter-actions { display: flex; gap: 10px; align-self: flex-end; padding-bottom: 0; }
-.filter-actions button, .confirm-modal button { height: 38px; padding: 0 18px; border: 1px solid var(--line); border-radius: 5px; background: white; font-size: 13px; }
+.filter-actions button { height: 38px; padding: 0 18px; border: 1px solid var(--line); border-radius: 5px; background: white; font-size: 13px; }
 .filter-actions button.primary { border-color: var(--primary); color: white; background: var(--primary); font-weight: 700; }
-.filter-actions button.success, .confirm-modal button.success { border-color: var(--green); color: white; background: var(--green); font-weight: 700; }
 .filter-actions button:hover { filter: brightness(.98); }
 .update-time, .query-hint { margin-left: auto; align-self: center; color: var(--subtle); font-size: 11px; white-space: nowrap; }
 .query-hint { color: var(--primary-dark); }
@@ -170,7 +169,6 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .table-panel { margin-top: 16px; padding: 14px 16px 10px; }
 .table-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .table-heading > div { display: flex; align-items: center; gap: 24px; }
-.table-tool { padding: 6px 10px; border: 0; color: var(--primary-dark); background: #eef5ff; font-size: 11px; border-radius: 5px; }
 .table-wrap { width: 100%; overflow-x: auto; }
 .game-table-wrap { padding-bottom: 92px; margin-bottom: -92px; }
 table { width: 100%; border-collapse: collapse; table-layout: auto; font-size: 11px; }
@@ -274,10 +272,6 @@ td b { color: var(--text); font-weight: 600; }
 .profile-fund-bars { display: grid; gap: 15px; margin-top: 19px; }.profile-fund-bars > div:not(.profile-net) { display: grid; grid-template-columns: 54px 1fr; column-gap: 9px; }.profile-fund-bars > div > span { color: var(--muted); font-size: 10px; }.profile-fund-bars > div > b { justify-self: end; color: var(--text); font-size: 11px; }.profile-fund-bars > div > i { grid-column: 1 / -1; height: 7px; margin-top: 7px; overflow: hidden; border-radius: 99px; background: #edf2f7; }.profile-fund-bars > div > i em { display: block; height: 100%; border-radius: inherit; }.profile-fund-bars em.input { background: #409eff; }.profile-fund-bars em.output { background: #f59e0b; }
 .profile-net { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 4px 10px; margin-top: 3px; padding-top: 13px; border-top: 1px solid #edf1f5; }.profile-net span, .profile-net small { color: var(--subtle); font-size: 10px; }.profile-net strong { justify-self: end; color: var(--text); font-size: 15px; }.profile-net small { grid-column: 1 / -1; }
 .user-profile-footer { min-height: 62px; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 12px 22px; border-top: 1px solid var(--line); }.user-profile-footer span { color: var(--subtle); font-size: 10px; }.user-profile-footer button { height: 34px; min-width: 78px; padding: 0 18px; border: 1px solid var(--line); border-radius: 5px; color: var(--text); background: white; font-size: 11px; }
-.confirm-modal { width: 400px; position: relative; z-index: 1; padding: 26px; border-radius: 10px; background: white; box-shadow: 0 22px 60px rgba(20,31,51,.22); text-align: center; }
-.confirm-icon { width: 46px; height: 46px; display: grid; place-items: center; margin: 0 auto 14px; border-radius: 50%; color: var(--green); background: #e9f8ef; font-size: 21px; font-weight: 800; }
-.confirm-modal h2 { margin: 0; font-size: 18px; }.confirm-modal p { margin: 10px 0 22px; color: var(--muted); font-size: 12px; line-height: 1.7; }
-.confirm-modal > div { display: flex; justify-content: center; gap: 10px; }.confirm-modal button { min-width: 92px; }.confirm-modal button:disabled { opacity: .65; cursor: wait; }
 .toast { position: fixed; z-index: 120; right: 28px; top: 78px; display: flex; align-items: center; gap: 8px; padding: 11px 16px; border: 1px solid #b9e9d1; border-radius: 7px; color: #087443; background: #f0fbf5; box-shadow: 0 10px 30px rgba(20,31,51,.12); font-size: 12px; opacity: 0; pointer-events: none; transform: translateY(-8px); transition: .2s ease; }
 .toast span { width: 18px; height: 18px; display: grid; place-items: center; border-radius: 50%; color: white; background: var(--green); font-size: 10px; }
 .toast.show { opacity: 1; transform: translateY(0); }
