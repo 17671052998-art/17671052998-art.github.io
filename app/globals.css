@@ -181,12 +181,6 @@ tbody tr:nth-child(even) { background: #fbfcfe; }
 tbody tr:hover { background: #f4f8ff; }
 td b { color: var(--text); font-weight: 600; }
 .game-cell { min-width: 175px; display: flex; align-items: center; gap: 8px; }
-.summary-user-cell { min-width: 124px; display: flex; align-items: center; gap: 7px; }
-.summary-user-avatar { width: 27px; height: 27px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 50%; color: #2563eb; background: #eaf3ff; font-size: 10px; font-weight: 800; }
-.summary-user-copy { min-width: 0; display: grid; gap: 2px; }
-.summary-user-copy strong, .summary-user-copy small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.summary-user-copy strong { color: var(--text); font-size: 11px; }
-.summary-user-copy small { color: var(--subtle); font-size: 9px; }
 .game-icon, .game-popover-icon { display: grid; place-items: center; flex: 0 0 auto; border-radius: 7px; }
 .game-icon { width: 28px; height: 28px; }
 .game-info-wrap { position: relative; display: inline-flex; }
