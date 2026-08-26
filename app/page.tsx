@@ -167,7 +167,7 @@ function buildUserGameRows(user: UserRow): Omit<UserGameRow, "gameRank">[] {
     const input = Math.max(1, Math.round(user.input * inputWeight));
     const rate = Number(Math.max(82, user.rate + rateOffset).toFixed(2));
     const output = Math.round(input * rate / 100);
-    return { ...user, game, input, output, net: input - output, rate, plays: Math.max(1, Math.round(user.plays * inputWeights[index])) };
+    return { ...user, game, input, output, net: input - output, rate, plays: Math.max(1, Math.round(user.plays * inputWeight)) };
   });
 }
 
