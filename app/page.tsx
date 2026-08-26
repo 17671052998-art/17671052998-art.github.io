@@ -7,6 +7,8 @@ type View = "overview" | "users";
 type Vendor = "热游" | "灵仙";
 
 type DetailSortKey = "plays" | "input" | "output" | "net" | "rate";
+type UserSortKey = "plays" | "input" | "output" | "net" | "rate";
+type UserSort = `${UserSortKey}-desc` | `${UserSortKey}-asc`;
 
 type GameRow = {
   game: string; region: string; active: number; plays: number;
@@ -75,6 +77,13 @@ const users: UserRow[] = [
 ];
 
 const detailSortLabels: Record<DetailSortKey, string> = { plays: "游戏下注次数", input: "用户投入", output: "用户出奖", net: "盈亏", rate: "返奖率" };
+const userSortOptions: { value: UserSort; label: string }[] = [
+  { value: "input-desc", label: "用户投入高到低" }, { value: "input-asc", label: "用户投入低到高" },
+  { value: "output-desc", label: "用户出奖高到低" }, { value: "output-asc", label: "用户出奖低到高" },
+  { value: "net-desc", label: "盈亏高到低" }, { value: "net-asc", label: "盈亏低到高" },
+  { value: "plays-desc", label: "游戏次数高到低" }, { value: "plays-asc", label: "游戏次数低到高" },
+  { value: "rate-desc", label: "返奖率高到低" }, { value: "rate-asc", label: "返奖率低到高" },
+];
 
 function buildGameUserRankings(gameName: string): GameUserRanking[] {
   const scale = 0.12;
@@ -321,7 +330,8 @@ export default function Home() {
   const [userRegion, setUserRegion] = useState("全部区域");
   const [userGame, setUserGame] = useState(vendorAllValue("热游"));
   const [userKeyword, setUserKeyword] = useState("");
-  const [appliedUser, setAppliedUser] = useState({ keyword: "", region: "全部区域", game: vendorAllValue("热游") });
+  const [sort, setSort] = useState<UserSort>("input-desc");
+  const [appliedUser, setAppliedUser] = useState({ keyword: "", region: "全部区域", game: vendorAllValue("热游"), sort: "input-desc" as UserSort });
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -398,7 +408,8 @@ export default function Home() {
       gameFilterMatches(row.game, appliedUser.game)
     );
     const ranks = new Map([...rows].sort((first, second) => second.input - first.input).map((row, index) => [`${row.id}-${row.game}`, index + 1]));
-    const sortedRows = [...rows].sort((first, second) => second.input - first.input);
+    const [sortKey, sortDirection] = appliedUser.sort.split("-") as [UserSortKey, "desc" | "asc"];
+    const sortedRows = [...rows].sort((first, second) => sortDirection === "desc" ? second[sortKey] - first[sortKey] : first[sortKey] - second[sortKey]);
     return sortedRows.map((row) => ({ ...row, gameRank: ranks.get(`${row.id}-${row.game}`) ?? 0 }));
   }, [appliedUser]);
 
@@ -440,7 +451,7 @@ export default function Home() {
   }
 
   function queryUsers() {
-    setAppliedUser({ keyword: userKeyword, region: userRegion, game: userGame });
+    setAppliedUser({ keyword: userKeyword, region: userRegion, game: userGame, sort });
     setPage(1); setLoading(true);
     setTimeout(() => { setLoading(false); notify("查询完成，已更新用户列表"); }, 520);
   }
@@ -450,8 +461,8 @@ export default function Home() {
   }
 
   function resetUsers() {
-    setUserKeyword(""); setUserRegion("全部区域"); setUserGame(vendorAllValue("热游"));
-    setAppliedUser({ keyword: "", region: "全部区域", game: vendorAllValue("热游") }); setPage(1); notify("筛选条件已重置");
+    setUserKeyword(""); setUserRegion("全部区域"); setUserGame(vendorAllValue("热游")); setSort("input-desc");
+    setAppliedUser({ keyword: "", region: "全部区域", game: vendorAllValue("热游"), sort: "input-desc" }); setPage(1); notify("筛选条件已重置");
   }
 
   function openGameDetails(gameRow: GameRow) {
@@ -525,6 +536,7 @@ export default function Home() {
                 <FilterField label="区域"><select value={userRegion} onChange={(event) => setUserRegion(event.target.value)}><option>全部区域</option>{regions.map((item) => <option key={item}>{item}</option>)}</select></FilterField>
                 <div className="filter-field game-filter-field"><span>游戏</span><GameSelector value={userGame} onChange={setUserGame} /></div>
                 <FilterField label="统计日期" wide><input value="2026-07-01  -  2026-07-17" readOnly /></FilterField>
+                <FilterField label="排序方式"><select value={sort} onChange={(event) => setSort(event.target.value as UserSort)}>{userSortOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></FilterField>
                 <div className="filter-actions"><button type="button" className="primary" onClick={queryUsers}>查询</button><button type="button" onClick={resetUsers}>重置</button></div>
               </section>
 
