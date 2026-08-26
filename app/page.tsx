@@ -7,7 +7,7 @@ type View = "overview" | "users";
 type Vendor = "热游" | "灵仙";
 
 type DetailSortKey = "plays" | "input" | "output" | "net" | "rate";
-type UserSortKey = "plays" | "input" | "output" | "net" | "rate";
+type UserSortKey = "plays" | "input" | "output" | "net";
 type UserSort = `${UserSortKey}-desc` | `${UserSortKey}-asc`;
 
 type GameRow = {
@@ -82,7 +82,6 @@ const userSortOptions: { value: UserSort; label: string }[] = [
   { value: "output-desc", label: "用户出奖高到低" }, { value: "output-asc", label: "用户出奖低到高" },
   { value: "net-desc", label: "盈亏高到低" }, { value: "net-asc", label: "盈亏低到高" },
   { value: "plays-desc", label: "游戏次数高到低" }, { value: "plays-asc", label: "游戏次数低到高" },
-  { value: "rate-desc", label: "返奖率高到低" }, { value: "rate-asc", label: "返奖率低到高" },
 ];
 
 function buildGameUserRankings(gameName: string): GameUserRanking[] {
