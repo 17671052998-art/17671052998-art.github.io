@@ -321,8 +321,7 @@ export default function Home() {
   const [userRegion, setUserRegion] = useState("全部区域");
   const [userGame, setUserGame] = useState(vendorAllValue("热游"));
   const [userKeyword, setUserKeyword] = useState("");
-  const [sort, setSort] = useState("用户投入降序");
-  const [appliedUser, setAppliedUser] = useState({ keyword: "", region: "全部区域", game: vendorAllValue("热游"), sort: "用户投入降序" });
+  const [appliedUser, setAppliedUser] = useState({ keyword: "", region: "全部区域", game: vendorAllValue("热游") });
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -399,7 +398,7 @@ export default function Home() {
       gameFilterMatches(row.game, appliedUser.game)
     );
     const ranks = new Map([...rows].sort((first, second) => second.input - first.input).map((row, index) => [`${row.id}-${row.game}`, index + 1]));
-    const sortedRows = [...rows].sort((first, second) => appliedUser.sort === "游戏次数降序" ? second.plays - first.plays : appliedUser.sort === "最近游戏时间" ? second.latest.localeCompare(first.latest) : appliedUser.sort === "盈亏降序" ? second.net - first.net : second.input - first.input);
+    const sortedRows = [...rows].sort((first, second) => second.input - first.input);
     return sortedRows.map((row) => ({ ...row, gameRank: ranks.get(`${row.id}-${row.game}`) ?? 0 }));
   }, [appliedUser]);
 
@@ -441,7 +440,7 @@ export default function Home() {
   }
 
   function queryUsers() {
-    setAppliedUser({ keyword: userKeyword, region: userRegion, game: userGame, sort });
+    setAppliedUser({ keyword: userKeyword, region: userRegion, game: userGame });
     setPage(1); setLoading(true);
     setTimeout(() => { setLoading(false); notify("查询完成，已更新用户列表"); }, 520);
   }
@@ -451,8 +450,8 @@ export default function Home() {
   }
 
   function resetUsers() {
-    setUserKeyword(""); setUserRegion("全部区域"); setUserGame(vendorAllValue("热游")); setSort("用户投入降序");
-    setAppliedUser({ keyword: "", region: "全部区域", game: vendorAllValue("热游"), sort: "用户投入降序" }); setPage(1); notify("筛选条件已重置");
+    setUserKeyword(""); setUserRegion("全部区域"); setUserGame(vendorAllValue("热游"));
+    setAppliedUser({ keyword: "", region: "全部区域", game: vendorAllValue("热游") }); setPage(1); notify("筛选条件已重置");
   }
 
   function openGameDetails(gameRow: GameRow) {
@@ -526,11 +525,10 @@ export default function Home() {
                 <FilterField label="区域"><select value={userRegion} onChange={(event) => setUserRegion(event.target.value)}><option>全部区域</option>{regions.map((item) => <option key={item}>{item}</option>)}</select></FilterField>
                 <div className="filter-field game-filter-field"><span>游戏</span><GameSelector value={userGame} onChange={setUserGame} /></div>
                 <FilterField label="统计日期" wide><input value="2026-07-01  -  2026-07-17" readOnly /></FilterField>
-                <FilterField label="排序方式"><select value={sort} onChange={(event) => setSort(event.target.value)}><option>用户投入降序</option><option>盈亏降序</option><option>游戏次数降序</option><option>最近游戏时间</option></select></FilterField>
                 <div className="filter-actions"><button type="button" className="primary" onClick={queryUsers}>查询</button><button type="button" onClick={resetUsers}>重置</button></div>
               </section>
 
-              <section className="panel table-panel user-table-panel"><div className="table-heading"><div><h2>游戏用户明细</h2><span>按用户与游戏维度展示投入、出奖、盈亏与返奖率表现。</span></div><span className="user-table-total">查询用户数 <b>{format.format(filteredUsers.length ? 86420 : 0)}</b></span></div><div className="table-wrap"><table><thead><tr><th>游戏排行</th><th>用户ID</th><th>昵称</th><th>区域</th><th>游戏</th><th>活跃天数</th><th>游戏次数</th><th>用户投入</th><th>用户出奖</th><th>盈亏</th><th>返奖率</th><th>最近游戏时间</th></tr></thead><tbody>{loading ? <tr><td colSpan={12}><div className="loading-state"><span />正在加载用户数据…</div></td></tr> : visibleUsers.length ? visibleUsers.map((row) => <tr key={`${row.id}-${row.game}`}><td><span className={`game-rank ${row.gameRank <= 3 ? `top-${row.gameRank}` : ""}`}>{row.gameRank}</span></td><td><b>{row.id}</b></td><td>{row.nickname}</td><td>{row.region}</td><td><GameCell name={row.game} /></td><td>{row.days}天</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{profitLoss(row.net)}</td><td className={row.rate >= 95 ? "rate-good" : ""}>{row.rate.toFixed(2)}%</td><td>{row.latest}</td></tr>) : <tr><td colSpan={12}><div className="empty-state"><b>未找到匹配用户游戏数据</b><span>请检查用户 ID、区域或游戏条件。</span><button type="button" onClick={resetUsers}>清除筛选</button></div></td></tr>}</tbody></table></div><div className="table-footer"><span>游戏排行按用户投入金额降序；盈亏 = 用户投入 - 用户出奖；返奖率 = 用户出奖 ÷ 用户投入 × 100%。</span><div className="pagination"><span>共 {format.format(filteredUsers.length)} 条 ｜ {pageSize} 条/页</span>{Array.from({ length: totalPages }, (_, index) => <button key={index + 1} type="button" className={page === index + 1 ? "active" : ""} onClick={() => setPage(index + 1)}>{index + 1}</button>)}</div></div></section>
+              <section className="panel table-panel user-table-panel"><div className="table-heading"><div><h2>游戏用户明细</h2><span>按用户与游戏维度展示投入、出奖、盈亏与返奖率表现。</span></div><span className="user-table-total">查询用户数 <b>{format.format(filteredUsers.length ? 86420 : 0)}</b></span></div><div className="table-wrap"><table><thead><tr><th>游戏排行</th><th>用户ID</th><th>昵称</th><th>区域</th><th>游戏</th><th>活跃天数</th><th>游戏次数</th><th>用户投入</th><th>用户出奖</th><th>盈亏</th><th>返奖率</th></tr></thead><tbody>{loading ? <tr><td colSpan={11}><div className="loading-state"><span />正在加载用户数据…</div></td></tr> : visibleUsers.length ? visibleUsers.map((row) => <tr key={`${row.id}-${row.game}`}><td><span className={`game-rank ${row.gameRank <= 3 ? `top-${row.gameRank}` : ""}`}>{row.gameRank}</span></td><td><b>{row.id}</b></td><td>{row.nickname}</td><td>{row.region}</td><td><GameCell name={row.game} /></td><td>{row.days}天</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{profitLoss(row.net)}</td><td className={row.rate >= 95 ? "rate-good" : ""}>{row.rate.toFixed(2)}%</td></tr>) : <tr><td colSpan={11}><div className="empty-state"><b>未找到匹配用户游戏数据</b><span>请检查用户 ID、区域或游戏条件。</span><button type="button" onClick={resetUsers}>清除筛选</button></div></td></tr>}</tbody></table></div><div className="table-footer"><span>游戏排行按用户投入金额降序；盈亏 = 用户投入 - 用户出奖；返奖率 = 用户出奖 ÷ 用户投入 × 100%。</span><div className="pagination"><span>共 {format.format(filteredUsers.length)} 条 ｜ {pageSize} 条/页</span>{Array.from({ length: totalPages }, (_, index) => <button key={index + 1} type="button" className={page === index + 1 ? "active" : ""} onClick={() => setPage(index + 1)}>{index + 1}</button>)}</div></div></section>
             </>
           )}
         </section>
