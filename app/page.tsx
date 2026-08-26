@@ -1,6 +1,6 @@
 "use client";
 
-import { CaretDownIcon, CheckIcon, CrownIcon, DiceFiveIcon, GameControllerIcon, RocketLaunchIcon, SpinnerBallIcon, XIcon, type Icon } from "@phosphor-icons/react";
+import { CaretDownIcon, CheckIcon, CrownIcon, DiceFiveIcon, GameControllerIcon, MagnifyingGlassIcon, RocketLaunchIcon, SpinnerBallIcon, XIcon, type Icon } from "@phosphor-icons/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type View = "overview" | "users";
@@ -29,7 +29,7 @@ type GameUserRanking = {
 
 const regions = ["阿拉伯", "土耳其", "印度", "印尼", "巴基斯坦", "孟加拉", "菲律宾", "巴西", "其他"];
 
-const games: GameRow[] = [
+const baseGames: GameRow[] = [
   { game: "Lucky Wheel", region: "印尼", active: 28420, plays: 186230, input: 5610200, output: 5091880, net: 518320, rate: 90.76, rank: "Top 1" },
   { game: "Crash", region: "菲律宾", active: 19860, plays: 142680, input: 4382400, output: 4078920, net: 303480, rate: 93.08, rank: "Top 2" },
   { game: "Slot King", region: "阿拉伯", active: 15320, plays: 98410, input: 3316200, output: 2968360, net: 347840, rate: 89.51, rank: "Top 3" },
@@ -45,10 +45,36 @@ const gameCatalog: Record<string, { icon: Icon; color: string; id: string; vendo
   Dice: { icon: DiceFiveIcon, color: "#16a34a", id: "GAME-10004", vendor: "灵仙" },
 };
 
+const extraGames: { name: string; vendor: Vendor }[] = [
+  ...["Turbo Dash", "Neon Spin", "Galaxy Drop", "Gold Miner", "Rocket Rush", "Mystic Cards", "Dragon Vault", "Ocean Catch", "Fruit Fiesta", "Panda Quest", "Jungle Gems", "Candy Blitz", "Pirate Fortune", "Star Casino", "Fire Phoenix", "Treasure Trail", "Royal Reels", "Moon Palace", "Cyber Racer", "Safari Spin", "Crystal Cave", "Desert Gold", "Comet Clash"].map((name) => ({ name, vendor: "热游" as Vendor })),
+  ...["Fortune Lotus", "Mega Mahjong", "Tiger Temple", "Ocean Pearl", "Golden Farm", "Dragon Dice", "Wild Buffalo", "Sweet Bonanza", "Vegas Night", "Ninja Strike", "Ancient Tomb", "Lucky Koi", "Diamond Rush", "Space Odyssey", "Mystic Forest", "Coin Carnival", "Phoenix Rise", "Arctic Adventure", "Sunken Treasure", "Rainbow Riches", "Samurai Gold", "Monster Mayhem", "Emerald Isle"].map((name) => ({ name, vendor: "灵仙" as Vendor })),
+];
+
+const generatedGameVisuals = [
+  { icon: SpinnerBallIcon, color: "#409eff" }, { icon: RocketLaunchIcon, color: "#7c3aed" },
+  { icon: CrownIcon, color: "#f59e0b" }, { icon: DiceFiveIcon, color: "#16a34a" },
+];
+
+extraGames.forEach(({ name, vendor }, index) => {
+  const visual = generatedGameVisuals[index % generatedGameVisuals.length];
+  gameCatalog[name] = { ...visual, id: `GAME-${String(10005 + index)}`, vendor };
+});
+
 const vendorGames: Record<Vendor, string[]> = {
-  热游: ["Lucky Wheel", "Crash"],
-  灵仙: ["Slot King", "Dice"],
+  热游: Object.entries(gameCatalog).filter(([, meta]) => meta.vendor === "热游").map(([name]) => name),
+  灵仙: Object.entries(gameCatalog).filter(([, meta]) => meta.vendor === "灵仙").map(([name]) => name),
 };
+
+const baseGameNames = new Set(baseGames.map((row) => row.game));
+const games: GameRow[] = [
+  ...baseGames,
+  ...Object.keys(gameCatalog).filter((game) => !baseGameNames.has(game)).map((game, index) => {
+    const input = 1_480_000 - index * 20_400;
+    const rate = Number((88.2 + index % 9 * 1.08).toFixed(2));
+    const output = Math.round(input * rate / 100);
+    return { game, region: regions[index % regions.length], active: 7_800 - index * 95, plays: 48_600 - index * 530, input, output, net: input - output, rate, rank: `Top ${index + 7}` };
+  }),
+];
 
 const vendorAllValue = (vendor: Vendor) => `${vendor}全部游戏`;
 const gameFilterVendor = (value: string) => (Object.keys(vendorGames) as Vendor[]).find((vendor) => value === vendorAllValue(vendor));
@@ -86,7 +112,7 @@ const userSortOptions: { value: UserSort; label: string }[] = [
 
 function buildGameUserRankings(gameName: string): GameUserRanking[] {
   const scale = 0.12;
-  return users.filter((user) => user.game === gameName).map((user) => {
+  return users.flatMap(buildUserGameRows).filter((user) => user.game === gameName).map((user) => {
     const input = Math.max(1, Math.round(user.input * scale));
     const rate = user.rate;
     const output = Math.round(input * rate / 100);
@@ -135,11 +161,11 @@ const profitLoss = (value: number) => <ProfitLoss value={value} />;
 
 function buildUserGameRows(user: UserRow): Omit<UserGameRow, "gameRank">[] {
   const gameNames = [user.game, ...Object.keys(gameCatalog).filter((game) => game !== user.game)];
-  const inputWeights = [1, 0.64, 0.42, 0.26];
-  const rateOffsets = [0, -1.4, 1.25, -0.8];
   return gameNames.map((game, index) => {
-    const input = Math.max(1, Math.round(user.input * inputWeights[index]));
-    const rate = Number(Math.max(82, user.rate + rateOffsets[index]).toFixed(2));
+    const inputWeight = index === 0 ? 1 : Math.max(0.05, 0.64 * Math.pow(0.78, index - 1));
+    const rateOffset = (index % 5 - 2) * 0.72;
+    const input = Math.max(1, Math.round(user.input * inputWeight));
+    const rate = Number(Math.max(82, user.rate + rateOffset).toFixed(2));
     const output = Math.round(input * rate / 100);
     return { ...user, game, input, output, net: input - output, rate, plays: Math.max(1, Math.round(user.plays * inputWeights[index])) };
   });
@@ -156,6 +182,7 @@ function FilterField({ label, children, wide = false, error }: { label: string; 
 function GameSelector({ value, onChange }: { value: string; onChange: (next: string) => void }) {
   const [open, setOpen] = useState(false);
   const [vendor, setVendor] = useState<Vendor>(() => gameFilterVendor(value) ?? gameCatalog[value]?.vendor ?? "热游");
+  const [keyword, setKeyword] = useState("");
   const selectorRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const selectedMeta = gameCatalog[value];
@@ -181,11 +208,17 @@ function GameSelector({ value, onChange }: { value: string; onChange: (next: str
 
   function selectGame(next: string) {
     onChange(next);
+    setKeyword("");
+    if (gameCatalog[next]) setVendor(gameCatalog[next].vendor);
     setOpen(false);
     requestAnimationFrame(() => triggerRef.current?.focus());
   }
 
   const SelectedIcon = selectedMeta?.icon ?? GameControllerIcon;
+  const searchKeyword = keyword.trim().toLowerCase();
+  const displayedGames = searchKeyword
+    ? Object.keys(gameCatalog).filter((gameName) => gameName.toLowerCase().includes(searchKeyword) || gameCatalog[gameName].id.toLowerCase().includes(searchKeyword))
+    : vendorGames[vendor];
 
   return (
     <div className="game-selector" ref={selectorRef}>
@@ -196,7 +229,7 @@ function GameSelector({ value, onChange }: { value: string; onChange: (next: str
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => {
-          if (!open) setVendor(gameFilterVendor(value) ?? selectedMeta?.vendor ?? "热游");
+          if (!open) { setVendor(gameFilterVendor(value) ?? selectedMeta?.vendor ?? "热游"); setKeyword(""); }
           setOpen((current) => !current);
         }}
         onKeyDown={(event) => {
@@ -223,12 +256,17 @@ function GameSelector({ value, onChange }: { value: string; onChange: (next: str
 
           <div className="vendor-switch" role="group" aria-label="游戏厂商">
             {(Object.keys(vendorGames) as Vendor[]).map((item) => (
-              <button key={item} type="button" className={vendor === item ? "active" : ""} aria-pressed={vendor === item} onClick={() => setVendor(item)}>{item}</button>
+              <button key={item} type="button" className={vendor === item ? "active" : ""} aria-pressed={vendor === item} onClick={() => { setVendor(item); setKeyword(""); }}>{item}</button>
             ))}
           </div>
 
+          <label className="game-selector-search">
+            <MagnifyingGlassIcon size={15} aria-hidden="true" />
+            <input value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder="搜索游戏名称 / GAME-xxxxx" aria-label="搜索游戏名称或游戏 ID" />
+          </label>
+
           <div className="vendor-game-list" role="radiogroup" aria-label={`${vendor}游戏列表`}>
-            {(() => {
+            {!searchKeyword && (() => {
               const selected = value === vendorAllValue(vendor);
               return (
                 <button type="button" role="radio" aria-checked={selected} className={`vendor-all-option ${selected ? "selected" : ""}`} onClick={() => selectGame(vendorAllValue(vendor))}>
@@ -238,18 +276,19 @@ function GameSelector({ value, onChange }: { value: string; onChange: (next: str
                 </button>
               );
             })()}
-            {vendorGames[vendor].map((gameName) => {
+            {displayedGames.map((gameName) => {
               const meta = gameCatalog[gameName];
               const GameIcon = meta.icon;
               const selected = value === gameName;
               return (
                 <button key={gameName} type="button" role="radio" aria-checked={selected} className={selected ? "selected" : ""} onClick={() => selectGame(gameName)}>
                   <span className="vendor-game-icon" style={{ color: meta.color, background: `${meta.color}18` }}><GameIcon size={20} weight="duotone" aria-hidden="true" /></span>
-                  <span><strong>{gameName}</strong><small>{meta.id}</small></span>
+                  <span><strong>{gameName}</strong><small>{meta.id} · {meta.vendor}</small></span>
                   <span className="game-radio" aria-hidden="true">{selected && <CheckIcon size={12} weight="bold" />}</span>
                 </button>
               );
             })}
+            {!displayedGames.length && <div className="game-search-empty">未找到匹配的游戏 ID 或名称</div>}
           </div>
         </section>
       )}
