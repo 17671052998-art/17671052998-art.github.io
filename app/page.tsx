@@ -445,6 +445,12 @@ export default function Home() {
   const pageSize = 8;
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
   const visibleUsers = filteredUsers.slice((page - 1) * pageSize, page * pageSize);
+  const visiblePageItems = useMemo<(number | "ellipsis")[]>(() => {
+    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, index) => index + 1);
+    if (page <= 4) return [1, 2, 3, 4, "ellipsis", totalPages];
+    if (page >= totalPages - 3) return [1, "ellipsis", totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+    return [1, "ellipsis", page - 1, page, page + 1, "ellipsis", totalPages];
+  }, [page, totalPages]);
   const detailRankings = useMemo(() => {
     if (!detailGame) return [];
     const rows = buildGameUserRankings(detailGame.game);
@@ -565,7 +571,25 @@ export default function Home() {
                 <div className="filter-actions"><button type="button" className="primary" onClick={queryUsers}>查询</button><button type="button" onClick={resetUsers}>重置</button></div>
               </section>
 
-              <section className="panel table-panel user-table-panel"><div className="table-heading"><div><h2>游戏用户明细</h2><span>按用户与游戏维度展示投入、出奖、盈亏与返奖率表现。</span></div><span className="user-table-total">查询用户数 <b>{format.format(filteredUsers.length ? 86420 : 0)}</b></span></div><div className="table-wrap"><table><thead><tr><th>游戏排行</th><th>用户ID</th><th>昵称</th><th>区域</th><th>游戏</th><th>活跃天数</th><th>游戏次数</th><th>用户投入</th><th>用户出奖</th><th>盈亏</th><th>返奖率</th></tr></thead><tbody>{loading ? <tr><td colSpan={11}><div className="loading-state"><span />正在加载用户数据…</div></td></tr> : visibleUsers.length ? visibleUsers.map((row) => <tr key={`${row.id}-${row.game}`}><td><span className={`game-rank ${row.gameRank <= 3 ? `top-${row.gameRank}` : ""}`}>{row.gameRank}</span></td><td><b>{row.id}</b></td><td>{row.nickname}</td><td>{row.region}</td><td><GameCell name={row.game} /></td><td>{row.days}天</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{profitLoss(row.net)}</td><td className={row.rate >= 95 ? "rate-good" : ""}>{row.rate.toFixed(2)}%</td></tr>) : <tr><td colSpan={11}><div className="empty-state"><b>未找到匹配用户游戏数据</b><span>请检查用户 ID、区域或游戏条件。</span><button type="button" onClick={resetUsers}>清除筛选</button></div></td></tr>}</tbody></table></div><div className="table-footer"><span>游戏排行按用户投入金额降序；盈亏 = 用户投入 - 用户出奖；返奖率 = 用户出奖 ÷ 用户投入 × 100%。</span><div className="pagination"><span>共 {format.format(filteredUsers.length)} 条 ｜ {pageSize} 条/页</span>{Array.from({ length: totalPages }, (_, index) => <button key={index + 1} type="button" className={page === index + 1 ? "active" : ""} onClick={() => setPage(index + 1)}>{index + 1}</button>)}</div></div></section>
+              <section className="panel table-panel user-table-panel">
+                <div className="table-heading">
+                  <div><h2>游戏用户明细</h2><span>按用户与游戏维度展示投入、出奖、盈亏与返奖率表现。</span></div>
+                  <span className="user-table-total">查询用户数 <b>{format.format(filteredUsers.length ? 86420 : 0)}</b></span>
+                </div>
+                <div className="table-wrap">
+                  <table>
+                    <thead><tr><th>游戏排行</th><th>用户ID</th><th>昵称</th><th>区域</th><th>游戏</th><th>活跃天数</th><th>游戏次数</th><th>用户投入</th><th>用户出奖</th><th>盈亏</th><th>返奖率</th></tr></thead>
+                    <tbody>{loading ? <tr><td colSpan={11}><div className="loading-state"><span />正在加载用户数据…</div></td></tr> : visibleUsers.length ? visibleUsers.map((row) => <tr key={`${row.id}-${row.game}`}><td><span className={`game-rank ${row.gameRank <= 3 ? `top-${row.gameRank}` : ""}`}>{row.gameRank}</span></td><td><b>{row.id}</b></td><td>{row.nickname}</td><td>{row.region}</td><td><GameCell name={row.game} /></td><td>{row.days}天</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{profitLoss(row.net)}</td><td className={row.rate >= 95 ? "rate-good" : ""}>{row.rate.toFixed(2)}%</td></tr>) : <tr><td colSpan={11}><div className="empty-state"><b>未找到匹配用户游戏数据</b><span>请检查用户 ID、区域或游戏条件。</span><button type="button" onClick={resetUsers}>清除筛选</button></div></td></tr>}</tbody>
+                  </table>
+                </div>
+                <div className="table-footer">
+                  <span>游戏排行按用户投入金额降序；盈亏 = 用户投入 - 用户出奖；返奖率 = 用户出奖 ÷ 用户投入 × 100%。</span>
+                  <div className="pagination">
+                    <span>共 {format.format(filteredUsers.length)} 条 ｜ {pageSize} 条/页</span>
+                    {visiblePageItems.map((item, index) => item === "ellipsis" ? <span className="pagination-ellipsis" key={`ellipsis-${index}`} aria-hidden="true">…</span> : <button key={item} type="button" className={page === item ? "active" : ""} onClick={() => setPage(item)}>{item}</button>)}
+                  </div>
+                </div>
+              </section>
             </>
           )}
         </section>
