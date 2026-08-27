@@ -429,15 +429,6 @@ export default function Home() {
     (region === "全部区域" || row.region === region) && gameFilterMatches(row.game, game)
   ), [region, game]);
 
-  const regionInvestmentStats = useMemo(() => {
-    const byRegion = new Map<string, { input: number; output: number }>();
-    filteredGames.forEach((row) => {
-      const current = byRegion.get(row.region) ?? { input: 0, output: 0 };
-      byRegion.set(row.region, { input: current.input + row.input, output: current.output + row.output });
-    });
-    return [...byRegion.entries()].map(([regionName, values]) => ({ region: regionName, ...values })).sort((a, b) => b.input - a.input);
-  }, [filteredGames]);
-
   const filteredUsers = useMemo<UserGameRow[]>(() => {
     const keyword = appliedUser.keyword.trim().toLowerCase();
     const rows = users.flatMap(buildUserGameRows).filter((row) =>
@@ -559,10 +550,6 @@ export default function Home() {
                 <MetricCard mark="奖" title="用户出奖" value={<Money value={14_998_360} />} valueTitle={`完整金额：${moneyText(14_998_360)} 金币`} valueHint={amountUnitText(14_998_360)} note="游戏返奖/派奖金额" tone="red" />
                 <MetricCard mark="盈" title="盈亏" value={<ProfitLoss value={1_481_840} />} valueTitle={`完整金额：${moneyText(1_481_840)} 金币`} valueHint={amountUnitText(1_481_840)} note="用户投入 - 用户出奖" tone="cyan" />
                 <MetricCard mark="返" title="返奖率" value="91.01%" note="用户出奖 ÷ 用户投入 × 100%" tone="green" />
-              </section>
-
-              <section className="analytics-row">
-                <article className="panel regional-statistics-panel"><div className="panel-title"><h2>游戏区域资金统计</h2><span>{gameFilterVendor(game) ? `按区域汇总${gameFilterLabel(game)}的用户投入、用户出奖、盈亏与返奖率` : `${game} 各区域用户投入、用户出奖、盈亏与返奖率`}</span></div><div className="region-stat-head" aria-hidden="true"><span>排名</span><span>区域</span><span>游戏</span><span>用户投入</span><span>用户出奖</span><span>盈亏</span><span>返奖率</span></div><div className="region-stat-list">{regionInvestmentStats.length ? regionInvestmentStats.map((item, index) => { const rate = item.input ? item.output / item.input * 100 : 0; return <div className="region-stat-row" key={item.region}><b className={index === 0 ? "first" : ""}>{index + 1}</b><strong>{item.region}</strong><span>{gameFilterLabel(game)}</span><em title={`${moneyText(item.input)} 金币`}>{money(item.input)}</em><em title={`${moneyText(item.output)} 金币`}>{money(item.output)}</em><em title={`${item.input - item.output < 0 ? "亏损 " : "盈利 "}${moneyText(Math.abs(item.input - item.output))} 金币`}>{profitLoss(item.input - item.output)}</em><em className={rate > 100 ? "rate-loss" : ""}>{rate.toFixed(2)}%</em></div>; }) : <div className="region-stat-empty">暂无匹配区域数据</div>}</div></article>
               </section>
 
               <section className="panel table-panel"><div className="table-heading"><div><h2>游戏汇总数据</h2><span>悬浮问号查看游戏资料，点击“用户明细”查看该游戏的用户排行</span></div></div><div className="table-wrap game-table-wrap"><table><thead><tr><th>游戏</th><th>区域</th><th>活跃用户</th><th>游戏次数</th><th>用户投入</th><th>用户出奖</th><th>盈亏</th><th>返奖率</th><th>热度</th><th>操作</th></tr></thead><tbody>{loading ? <tr><td colSpan={10}><div className="loading-state"><span />正在加载报表数据…</div></td></tr> : filteredGames.length ? filteredGames.slice(0, 4).map((row) => <tr key={`${row.region}-${row.game}`}><td><GameCell name={row.game} /></td><td>{row.region}</td><td>{format.format(row.active)}</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{profitLoss(row.net)}</td><td>{row.rate.toFixed(2)}%</td><td>{row.rank}</td><td><button type="button" className="row-action" onClick={() => openGameDetails(row)}>用户明细</button></td></tr>) : <tr><td colSpan={10}><div className="empty-state"><b>未找到匹配数据</b><span>请调整区域、游戏或用户筛选条件后重试。</span><button type="button" onClick={resetOverview}>清除筛选</button></div></td></tr>}</tbody></table></div><div className="pagination"><span>共 {filteredGames.length} 条 ｜ 20 条/页</span><button className="active" type="button">1</button><button type="button" disabled>2</button></div></section>

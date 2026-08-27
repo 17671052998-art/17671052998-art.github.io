@@ -158,18 +158,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .money-value > img { width: 1em; height: 1em; flex: 0 0 1em; object-fit: contain; transform: translateY(-.03em); }
 .profit-loss { display: inline-flex; align-items: center; gap: .12em; white-space: nowrap; }.profit-loss.loss { color: #dc2626; }.profit-loss.loss .money-value { color: inherit; }
 
-.analytics-row { margin-top: 16px; }
-.regional-statistics-panel { padding: 15px 18px 10px; }
 .panel-title { display: flex; align-items: center; justify-content: space-between; }
 .panel-title h2, .table-heading h2 { margin: 0; font-size: 15px; }
 .panel-title > span, .table-heading span { color: var(--subtle); font-size: 10px; }
-.region-stat-head, .region-stat-row { display: grid; grid-template-columns: 52px 108px minmax(112px, .9fr) minmax(142px, 1.05fr) minmax(142px, 1.05fr) minmax(122px, .85fr) 86px; align-items: center; column-gap: 14px; }
-.region-stat-head { height: 38px; margin-top: 14px; padding: 0 14px; border-radius: 5px; color: var(--muted); background: #f7f9fc; font-size: 10px; }
-.region-stat-row { min-height: 47px; padding: 0 14px; border-bottom: 1px solid #f0f3f7; color: var(--muted); font-size: 11px; }
-.region-stat-row:nth-child(even) { background: #fbfcfe; }.region-stat-row:hover { background: #f4f8ff; }
-.region-stat-row b { color: var(--muted); text-align: center; }.region-stat-row b.first { color: #f59e0b; }.region-stat-row strong { color: var(--text); font-size: 12px; }.region-stat-row > span { color: var(--muted); }
-.region-stat-row em { color: var(--text); font-size: 12px; font-style: normal; font-weight: 700; }.region-stat-row em .money-value { gap: .3em; }.region-stat-row em .profit-loss.loss, .region-stat-row em.rate-loss { color: #dc2626; }
-.region-stat-empty { display: grid; height: 156px; place-items: center; color: var(--subtle); font-size: 12px; }
 
 .table-panel { margin-top: 16px; padding: 14px 16px 10px; }
 .table-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
