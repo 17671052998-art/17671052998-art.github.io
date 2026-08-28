@@ -279,7 +279,7 @@ td b { color: var(--text); font-weight: 600; }
 .toast.show { opacity: 1; transform: translateY(0); }
 
 @keyframes spin { to { transform: rotate(360deg); } }
-@media (max-width: 1450px) {
+@media (max-width: 1800px) {
   .page-content { padding-inline: 22px; }
   .overview-filters, .user-filters { flex-wrap: wrap; padding-right: 18px; }
   .filter-actions { align-self: flex-end; }
