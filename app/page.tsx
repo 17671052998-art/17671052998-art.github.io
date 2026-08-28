@@ -251,8 +251,16 @@ function GameSelector({ value, onChange }: { value: string; onChange: (next: str
       {open && (
         <section className="game-selector-panel" role="dialog" aria-label="选择游戏">
           <div className="game-selector-panel-head">
-            <div><strong>选择游戏</strong><span>选择厂商后可选全部游戏或单选游戏</span></div>
+            <div><strong>选择游戏</strong><span>可选择全部游戏、厂商全部游戏或单项游戏</span></div>
           </div>
+
+          {!searchKeyword && (
+            <button type="button" className={`all-games-option ${value === "全部游戏" ? "selected" : ""}`} aria-pressed={value === "全部游戏"} onClick={() => selectGame("全部游戏")}>
+              <span className="vendor-game-icon"><GameControllerIcon size={20} weight="duotone" aria-hidden="true" /></span>
+              <span><strong>全部游戏</strong><small>汇总热游与灵仙的全部游戏</small></span>
+              <span className="game-radio" aria-hidden="true">{value === "全部游戏" && <CheckIcon size={12} weight="bold" />}</span>
+            </button>
+          )}
 
           <div className="vendor-switch" role="group" aria-label="游戏厂商">
             {(Object.keys(vendorGames) as Vendor[]).map((item) => (

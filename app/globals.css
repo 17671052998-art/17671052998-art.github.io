@@ -110,6 +110,11 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .game-selector-panel-head > div strong { color: var(--text); font-size: 13px; }
 .game-selector-panel-head > div span { margin-top: 3px; color: var(--subtle); font-size: 10px; }
 .game-selector-panel-head > button { padding: 2px 0; border: 0; color: var(--primary-dark); background: transparent; font-size: 10px; }
+.all-games-option { width: 100%; min-height: 54px; display: grid; grid-template-columns: 40px minmax(0, 1fr) 24px; align-items: center; gap: 9px; margin-top: 12px; padding: 8px 10px; border: 1px solid #e0e9f4; border-radius: 7px; color: var(--text); text-align: left; background: #f8fbff; }
+.all-games-option:hover { background: #f1f7ff; }
+.all-games-option.selected { border-color: #afd2fb; background: #f3f8ff; }
+.all-games-option > span:nth-child(2) strong, .all-games-option > span:nth-child(2) small { display: block; }.all-games-option > span:nth-child(2) strong { font-size: 12px; }.all-games-option > span:nth-child(2) small { margin-top: 3px; color: var(--subtle); font-size: 10px; }
+.all-games-option .vendor-game-icon { color: var(--primary-dark); background: #eaf3ff; }
 .vendor-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 13px; padding: 3px; border-radius: 7px; background: #f1f4f8; }
 .vendor-switch button { height: 30px; border: 0; border-radius: 5px; color: var(--muted); background: transparent; font-size: 11px; }
 .vendor-switch button.active { color: var(--primary-dark); background: white; box-shadow: 0 1px 4px rgba(20,31,51,.1); font-weight: 700; }
