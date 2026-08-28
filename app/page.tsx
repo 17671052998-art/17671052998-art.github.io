@@ -574,7 +574,6 @@ export default function Home() {
               <section className="panel table-panel user-table-panel">
                 <div className="table-heading">
                   <div><h2>游戏用户明细</h2><span>按用户与游戏维度展示投入、出奖、盈亏与返奖率表现。</span></div>
-                  <span className="user-table-total">查询用户数 <b>{format.format(filteredUsers.length ? 86420 : 0)}</b></span>
                 </div>
                 <div className="table-wrap">
                   <table>
