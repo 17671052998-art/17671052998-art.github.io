@@ -387,6 +387,7 @@ export default function Home() {
   const [detailGame, setDetailGame] = useState<GameRow | null>(null);
   const [detailSortKey, setDetailSortKey] = useState<DetailSortKey>("input");
   const [detailSortOrder, setDetailSortOrder] = useState<"desc" | "asc">("desc");
+  const [detailPage, setDetailPage] = useState(1);
   const [profileUser, setProfileUser] = useState<UserRow | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const detailCloseRef = useRef<HTMLButtonElement | null>(null);
@@ -464,6 +465,9 @@ export default function Home() {
     const rows = buildGameUserRankings(detailGame.game);
     return [...rows].sort((first, second) => detailSortOrder === "desc" ? second[detailSortKey] - first[detailSortKey] : first[detailSortKey] - second[detailSortKey]);
   }, [detailGame, detailSortKey, detailSortOrder]);
+  const detailPageSize = 8;
+  const detailTotalPages = Math.max(1, Math.ceil(detailRankings.length / detailPageSize));
+  const visibleDetailRankings = detailRankings.slice((detailPage - 1) * detailPageSize, detailPage * detailPageSize);
   const detailTotals = useMemo(() => {
     const totals = detailRankings.reduce((sum, row) => ({
       plays: sum.plays + row.plays,
@@ -511,6 +515,7 @@ export default function Home() {
   function openGameDetails(gameRow: GameRow) {
     setDetailSortKey("input");
     setDetailSortOrder("desc");
+    setDetailPage(1);
     setDetailGame(gameRow);
   }
 
@@ -615,7 +620,7 @@ export default function Home() {
             </header>
 
             <div className="game-detail-toolbar">
-              <div className="game-detail-toolbar-foot"><div className="detail-sort-controls"><label><span>排序字段</span><select aria-label="排序字段" value={detailSortKey} onChange={(event) => setDetailSortKey(event.target.value as DetailSortKey)}>{(Object.keys(detailSortLabels) as DetailSortKey[]).map((key) => <option key={key} value={key}>{detailSortLabels[key]}</option>)}</select></label><label><span>排序顺序</span><select aria-label="排序顺序" value={detailSortOrder} onChange={(event) => setDetailSortOrder(event.target.value as "desc" | "asc")}><option value="desc">降序</option><option value="asc">升序</option></select></label></div><div className="game-detail-scope" id="game-detail-scope"><span>统计日期：2026-07-17</span><small>共 {detailRankings.length} 位用户 · 按{detailSortLabels[detailSortKey]}{detailSortOrder === "desc" ? "降序" : "升序"}</small></div></div>
+              <div className="game-detail-toolbar-foot"><div className="detail-sort-controls"><label><span>排序字段</span><select aria-label="排序字段" value={detailSortKey} onChange={(event) => { setDetailSortKey(event.target.value as DetailSortKey); setDetailPage(1); }}>{(Object.keys(detailSortLabels) as DetailSortKey[]).map((key) => <option key={key} value={key}>{detailSortLabels[key]}</option>)}</select></label><label><span>排序顺序</span><select aria-label="排序顺序" value={detailSortOrder} onChange={(event) => { setDetailSortOrder(event.target.value as "desc" | "asc"); setDetailPage(1); }}><option value="desc">降序</option><option value="asc">升序</option></select></label></div><div className="game-detail-scope" id="game-detail-scope"><span>统计日期：2026-07-17</span><small>共 {detailRankings.length} 位用户 · 按{detailSortLabels[detailSortKey]}{detailSortOrder === "desc" ? "降序" : "升序"}</small></div></div>
             </div>
 
             <div className="game-detail-metrics">
@@ -629,11 +634,11 @@ export default function Home() {
             <div className="game-detail-table-wrap">
               <table className="game-detail-table">
                 <thead><tr><th>用户信息</th><th>游戏下注次数</th><th>用户投入</th><th>用户出奖</th><th>盈亏</th><th>返奖率</th></tr></thead>
-                <tbody>{detailRankings.length ? detailRankings.map((row, index) => <tr key={row.id}><td><div className="game-detail-user"><span className={`game-detail-rank rank-${index + 1}`}>{index + 1}</span><span className="game-detail-user-avatar">{row.nickname.slice(0, 1).toUpperCase()}</span><span className="game-detail-user-copy"><strong>{row.nickname}</strong><small>ID {row.id} · {row.region}</small></span></div></td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{profitLoss(row.net)}</td><td className={row.rate >= 95 ? "rate-good" : ""}>{row.rate.toFixed(2)}%</td></tr>) : <tr><td colSpan={6}><div className="game-detail-empty"><b>暂无符合条件的用户</b><span>请调整数值区间后重试</span></div></td></tr>}</tbody>
+                <tbody>{detailRankings.length ? visibleDetailRankings.map((row, index) => { const rank = (detailPage - 1) * detailPageSize + index + 1; return <tr key={row.id}><td><div className="game-detail-user"><span className={`game-detail-rank rank-${rank}`}>{rank}</span><span className="game-detail-user-avatar">{row.nickname.slice(0, 1).toUpperCase()}</span><span className="game-detail-user-copy"><strong>{row.nickname}</strong><small>ID {row.id} · {row.region}</small></span></div></td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{profitLoss(row.net)}</td><td className={row.rate >= 95 ? "rate-good" : ""}>{row.rate.toFixed(2)}%</td></tr>; }) : <tr><td colSpan={6}><div className="game-detail-empty"><b>暂无符合条件的用户</b><span>请调整数值区间后重试</span></div></td></tr>}</tbody>
               </table>
             </div>
 
-            <footer className="game-detail-footer"><span>盈亏 = 用户投入 - 用户出奖；返奖率 = 用户出奖 ÷ 用户投入 × 100%。</span><button type="button" onClick={() => setDetailGame(null)}>关闭</button></footer>
+            <footer className="game-detail-footer"><span>盈亏 = 用户投入 - 用户出奖；返奖率 = 用户出奖 ÷ 用户投入 × 100%。</span><div className="game-detail-footer-actions"><div className="pagination detail-pagination"><span>共 {detailRankings.length} 条 ｜ {detailPageSize} 条/页</span>{Array.from({ length: detailTotalPages }, (_, index) => <button key={index + 1} type="button" className={detailPage === index + 1 ? "active" : ""} onClick={() => setDetailPage(index + 1)}>{index + 1}</button>)}</div><button type="button" onClick={() => setDetailGame(null)}>关闭</button></div></footer>
           </section>
         </div>
       )}

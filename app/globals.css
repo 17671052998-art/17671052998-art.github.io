@@ -254,6 +254,8 @@ td b { color: var(--text); font-weight: 600; }
 .game-detail-empty b { color: var(--text); font-size: 13px; }.game-detail-empty span { color: var(--subtle); font-size: 10px; }
 .game-detail-footer { min-height: 62px; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 12px 22px; }
 .game-detail-footer span { color: var(--subtle); font-size: 10px; }
+.game-detail-footer-actions { display: flex; align-items: center; gap: 16px; }
+.detail-pagination { padding-top: 0; white-space: nowrap; }
 .game-detail-footer button { height: 34px; min-width: 78px; padding: 0 18px; border: 1px solid var(--line); border-radius: 5px; color: var(--text); background: white; font-size: 11px; }
 .user-profile-layer { padding: 24px; }
 .user-profile-modal { width: min(780px, calc(100vw - 48px)); position: relative; z-index: 1; overflow: hidden; border-radius: 12px; background: white; box-shadow: 0 24px 70px rgba(20,31,51,.28); }
