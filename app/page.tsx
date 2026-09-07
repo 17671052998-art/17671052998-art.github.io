@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 type View = "overview" | "users";
 type Vendor = "热游" | "灵仙";
+type GameListMode = "summary" | "detail";
 
 type DetailSortKey = "plays" | "input" | "output" | "net" | "rate";
 type UserSortKey = "plays" | "input" | "output" | "net";
@@ -14,6 +15,8 @@ type GameRow = {
   game: string; region: string; active: number; plays: number;
   input: number; output: number; net: number; rate: number; rank: string;
 };
+
+type DailyGameRow = GameRow & { date: string };
 
 type UserRow = {
   id: string; nickname: string; region: string; game: string; days: number; plays: number;
@@ -76,6 +79,28 @@ const games: GameRow[] = [
   }),
 ];
 
+const reportDates = Array.from({ length: 17 }, (_, index) => `2026/07/${String(17 - index).padStart(2, "0")}`);
+const dailyWeights = [1.04, 0.98, 1.01, 0.95, 1.08, 0.92, 1.03, 0.97, 1.06, 0.94, 1, 0.96, 1.02, 0.91, 1.05, 0.99, 1.09];
+const dailyWeightTotal = dailyWeights.reduce((total, weight) => total + weight, 0);
+
+function buildDailyGameRows(rows: GameRow[]): DailyGameRow[] {
+  return rows.flatMap((row) => reportDates.map((date, index) => {
+    const weight = dailyWeights[index] / dailyWeightTotal;
+    const input = Math.max(1, Math.round(row.input * weight));
+    const output = Math.max(0, Math.round(row.output * weight));
+    return {
+      ...row,
+      date,
+      active: Math.max(1, Math.round(row.active * weight)),
+      plays: Math.max(1, Math.round(row.plays * weight)),
+      input,
+      output,
+      net: input - output,
+      rate: input ? output / input * 100 : 0,
+    };
+  }));
+}
+
 const vendorAllValue = (vendor: Vendor) => `${vendor}全部游戏`;
 const gameFilterVendor = (value: string) => (Object.keys(vendorGames) as Vendor[]).find((vendor) => value === vendorAllValue(vendor));
 const gameFilterMatches = (gameName: string, filterValue: string) => {
@@ -109,6 +134,13 @@ const userSortOptions: { value: UserSort; label: string }[] = [
   { value: "net-desc", label: "盈亏高到低" }, { value: "net-asc", label: "盈亏低到高" },
   { value: "plays-desc", label: "游戏次数高到低" }, { value: "plays-asc", label: "游戏次数低到高" },
 ];
+
+function getPaginationItems(current: number, total: number): (number | "ellipsis")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, index) => index + 1);
+  if (current <= 4) return [1, 2, 3, 4, "ellipsis", total];
+  if (current >= total - 3) return [1, "ellipsis", total - 3, total - 2, total - 1, total];
+  return [1, "ellipsis", current - 1, current, current + 1, "ellipsis", total];
+}
 
 function buildGameUserRankings(gameName: string): GameUserRanking[] {
   const scale = 0.12;
@@ -371,6 +403,7 @@ function UserProfileModal({ user, onClose, closeRef }: { user: UserRow; onClose:
 
 export default function Home() {
   const [view, setView] = useState<View>("overview");
+  const [gameListMode, setGameListMode] = useState<GameListMode>("summary");
   const [region, setRegion] = useState("全部区域");
   const [game, setGame] = useState(vendorAllValue("热游"));
   const [userRegion, setUserRegion] = useState("全部区域");
@@ -379,6 +412,7 @@ export default function Home() {
   const [sort, setSort] = useState<UserSort>("input-desc");
   const [appliedUser, setAppliedUser] = useState({ keyword: "", region: "全部区域", game: vendorAllValue("热游"), sort: "input-desc" as UserSort });
   const [page, setPage] = useState(1);
+  const [dailyPage, setDailyPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [adminMenu, setAdminMenu] = useState(false);
@@ -437,6 +471,7 @@ export default function Home() {
   const filteredGames = useMemo(() => games.filter((row) =>
     (region === "全部区域" || row.region === region) && gameFilterMatches(row.game, game)
   ), [region, game]);
+  const dailyGames = useMemo(() => buildDailyGameRows(filteredGames), [filteredGames]);
 
   const filteredUsers = useMemo<UserGameRow[]>(() => {
     const keyword = appliedUser.keyword.trim().toLowerCase();
@@ -454,12 +489,11 @@ export default function Home() {
   const pageSize = 8;
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
   const visibleUsers = filteredUsers.slice((page - 1) * pageSize, page * pageSize);
-  const visiblePageItems = useMemo<(number | "ellipsis")[]>(() => {
-    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, index) => index + 1);
-    if (page <= 4) return [1, 2, 3, 4, "ellipsis", totalPages];
-    if (page >= totalPages - 3) return [1, "ellipsis", totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
-    return [1, "ellipsis", page - 1, page, page + 1, "ellipsis", totalPages];
-  }, [page, totalPages]);
+  const visiblePageItems = useMemo(() => getPaginationItems(page, totalPages), [page, totalPages]);
+  const dailyPageSize = 8;
+  const dailyTotalPages = Math.max(1, Math.ceil(dailyGames.length / dailyPageSize));
+  const visibleDailyGames = dailyGames.slice((dailyPage - 1) * dailyPageSize, dailyPage * dailyPageSize);
+  const dailyPageItems = useMemo(() => getPaginationItems(dailyPage, dailyTotalPages), [dailyPage, dailyTotalPages]);
   const detailRankings = useMemo(() => {
     if (!detailGame) return [];
     const rows = buildGameUserRankings(detailGame.game);
@@ -479,6 +513,14 @@ export default function Home() {
   }, [detailRankings]);
   const detailGameMeta = detailGame ? gameCatalog[detailGame.game] : undefined;
   const DetailGameIcon = detailGameMeta?.icon ?? GameControllerIcon;
+
+  useEffect(() => {
+    setDailyPage(1);
+  }, [region, game]);
+
+  useEffect(() => {
+    setDailyPage((current) => Math.min(current, dailyTotalPages));
+  }, [dailyTotalPages]);
 
   function switchView(next: View) {
     if (next === "users" && region !== "全部区域") {
@@ -504,7 +546,7 @@ export default function Home() {
   }
 
   function resetOverview() {
-    setRegion("全部区域"); setGame(vendorAllValue("热游")); notify("筛选条件已重置");
+    setRegion("全部区域"); setGame(vendorAllValue("热游")); setDailyPage(1); notify("筛选条件已重置");
   }
 
   function resetUsers() {
@@ -571,7 +613,27 @@ export default function Home() {
                 <MetricCard mark="返" title="返奖率" value="91.01%" note="用户出奖 ÷ 用户投入 × 100%" tone="green" />
               </section>
 
-              <section className="panel table-panel"><div className="table-heading"><div><h2>游戏汇总数据</h2><span>悬浮问号查看游戏资料，点击“用户明细”查看该游戏的用户排行</span></div></div><div className="table-wrap game-table-wrap"><table><thead><tr><th>游戏</th><th>区域</th><th>活跃用户</th><th>游戏次数</th><th>用户投入</th><th>用户出奖</th><th>盈亏</th><th>返奖率</th><th>操作</th></tr></thead><tbody>{loading ? <tr><td colSpan={9}><div className="loading-state"><span />正在加载报表数据…</div></td></tr> : filteredGames.length ? filteredGames.slice(0, 4).map((row) => <tr key={`${row.region}-${row.game}`}><td><GameCell name={row.game} /></td><td>{row.region}</td><td>{format.format(row.active)}</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{profitLoss(row.net)}</td><td>{row.rate.toFixed(2)}%</td><td><button type="button" className="row-action" onClick={() => openGameDetails(row)}>用户明细</button></td></tr>) : <tr><td colSpan={9}><div className="empty-state"><b>未找到匹配数据</b><span>请调整区域、游戏或用户筛选条件后重试。</span><button type="button" onClick={resetOverview}>清除筛选</button></div></td></tr>}</tbody></table></div><div className="pagination"><span>共 {filteredGames.length} 条 ｜ 20 条/页</span><button className="active" type="button">1</button><button type="button" disabled>2</button></div></section>
+              <section className="panel table-panel">
+                <div className="table-heading game-list-heading">
+                  <div className="table-heading-copy"><h2>游戏汇总数据</h2><span>{gameListMode === "summary" ? "悬浮问号查看游戏资料，点击“用户明细”查看该游戏的用户排行" : "按日期、区域与游戏展示每日统计数据。"}</span></div>
+                  <div className="game-list-tabs" role="tablist" aria-label="游戏数据列表类型">
+                    <button type="button" role="tab" aria-selected={gameListMode === "summary"} className={gameListMode === "summary" ? "active" : ""} onClick={() => setGameListMode("summary")}>游戏汇总列表</button>
+                    <button type="button" role="tab" aria-selected={gameListMode === "detail"} className={gameListMode === "detail" ? "active" : ""} onClick={() => { setGameListMode("detail"); setDailyPage(1); }}>明细列表</button>
+                  </div>
+                </div>
+
+                {gameListMode === "summary" ? (
+                  <>
+                    <div className="table-wrap game-table-wrap"><table><thead><tr><th>游戏</th><th>区域</th><th>活跃用户</th><th>游戏次数</th><th>用户投入</th><th>用户出奖</th><th>盈亏</th><th>返奖率</th><th>操作</th></tr></thead><tbody>{loading ? <tr><td colSpan={9}><div className="loading-state"><span />正在加载报表数据…</div></td></tr> : filteredGames.length ? filteredGames.slice(0, 4).map((row) => <tr key={`${row.region}-${row.game}`}><td><GameCell name={row.game} /></td><td>{row.region}</td><td>{format.format(row.active)}</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{profitLoss(row.net)}</td><td>{row.rate.toFixed(2)}%</td><td><button type="button" className="row-action" onClick={() => openGameDetails(row)}>用户明细</button></td></tr>) : <tr><td colSpan={9}><div className="empty-state"><b>未找到匹配数据</b><span>请调整区域、游戏或用户筛选条件后重试。</span><button type="button" onClick={resetOverview}>清除筛选</button></div></td></tr>}</tbody></table></div>
+                    <div className="pagination"><span>共 {filteredGames.length} 条 ｜ 20 条/页</span><button className="active" type="button">1</button><button type="button" disabled>2</button></div>
+                  </>
+                ) : (
+                  <>
+                    <div className="table-wrap game-table-wrap"><table><thead><tr><th>日期</th><th>游戏</th><th>区域</th><th>活跃用户</th><th>游戏次数</th><th>用户投入</th><th>用户出奖</th><th>盈亏</th><th>返奖率</th><th>操作</th></tr></thead><tbody>{loading ? <tr><td colSpan={10}><div className="loading-state"><span />正在加载报表数据…</div></td></tr> : visibleDailyGames.length ? visibleDailyGames.map((row) => <tr key={`${row.date}-${row.region}-${row.game}`}><td>{row.date}</td><td><GameCell name={row.game} /></td><td>{row.region}</td><td>{format.format(row.active)}</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{profitLoss(row.net)}</td><td>{row.rate.toFixed(2)}%</td><td><button type="button" className="row-action" onClick={() => openGameDetails(row)}>用户明细</button></td></tr>) : <tr><td colSpan={10}><div className="empty-state"><b>未找到匹配数据</b><span>请调整区域或游戏条件后重试。</span><button type="button" onClick={resetOverview}>清除筛选</button></div></td></tr>}</tbody></table></div>
+                    <div className="table-footer"><span>明细按日期、区域与游戏拆分；统计范围内每个游戏-区域组合每天生成一条数据。</span><div className="pagination"><span>共 {dailyGames.length} 条 ｜ {dailyPageSize} 条/页</span>{dailyPageItems.map((item, index) => item === "ellipsis" ? <span className="pagination-ellipsis" key={`daily-ellipsis-${index}`} aria-hidden="true">…</span> : <button key={item} type="button" className={dailyPage === item ? "active" : ""} onClick={() => setDailyPage(item)}>{item}</button>)}</div></div>
+                  </>
+                )}
+              </section>
             </>
           ) : (
             <>

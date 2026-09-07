@@ -170,6 +170,12 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .table-panel { margin-top: 16px; padding: 14px 16px 10px; }
 .table-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .table-heading > div { display: flex; align-items: center; gap: 24px; }
+.game-list-heading { gap: 16px; }
+.table-heading-copy { min-width: 0; }
+.game-list-tabs { display: inline-flex; flex: 0 0 auto; gap: 3px; padding: 3px; border-radius: 6px; background: #f3f6fa; }
+.game-list-tabs button { height: 28px; padding: 0 12px; border: 0; border-radius: 4px; color: var(--muted); background: transparent; font-size: 11px; white-space: nowrap; }
+.game-list-tabs button.active { color: var(--primary-dark); background: white; box-shadow: 0 1px 3px rgba(20,31,51,.12); font-weight: 700; }
+.game-list-tabs button:focus-visible { outline: 2px solid #8fc2fa; outline-offset: 1px; }
 .table-wrap { width: 100%; overflow-x: auto; }
 .game-table-wrap { padding-bottom: 92px; margin-bottom: -92px; }
 table { width: 100%; border-collapse: collapse; table-layout: auto; font-size: 11px; }
