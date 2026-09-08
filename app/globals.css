@@ -170,12 +170,6 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .table-panel { margin-top: 16px; padding: 14px 16px 10px; }
 .table-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .table-heading > div { display: flex; align-items: center; gap: 24px; }
-.game-list-heading { gap: 16px; }
-.table-heading-copy { min-width: 0; }
-.game-list-tabs { display: inline-flex; flex: 0 0 auto; gap: 3px; padding: 3px; border-radius: 6px; background: #f3f6fa; }
-.game-list-tabs button { height: 28px; padding: 0 12px; border: 0; border-radius: 4px; color: var(--muted); background: transparent; font-size: 11px; white-space: nowrap; }
-.game-list-tabs button.active { color: var(--primary-dark); background: white; box-shadow: 0 1px 3px rgba(20,31,51,.12); font-weight: 700; }
-.game-list-tabs button:focus-visible { outline: 2px solid #8fc2fa; outline-offset: 1px; }
 .table-wrap { width: 100%; overflow-x: auto; }
 .game-table-wrap { padding-bottom: 92px; margin-bottom: -92px; }
 table { width: 100%; border-collapse: collapse; table-layout: auto; font-size: 11px; }
@@ -204,6 +198,9 @@ td b { color: var(--text); font-weight: 600; }
 .game-meta-row em { color: var(--subtle); font-size: 10px; font-style: normal; }
 .game-meta-row b { color: var(--text); font-size: 11px; font-weight: 600; }
 .row-action { height: 28px; padding: 0 12px; border: 0; border-radius: 5px; color: var(--primary-dark); background: #eaf3ff; font-size: 10px; font-weight: 700; }
+.row-actions { display: flex; align-items: center; gap: 6px; }
+.row-action.secondary { color: #55657c; background: #f1f4f8; }
+.row-action.secondary:hover { color: var(--primary-dark); background: #e7f1ff; }
 .text-link { padding: 0; border: 0; color: var(--primary-dark); background: transparent; font-size: 11px; }
 .rate-good { color: var(--green); font-weight: 700; }
 .rank-tag { display: inline-flex; min-width: 62px; height: 25px; align-items: center; justify-content: center; border-radius: 999px; color: #2563eb; background: #eaf3ff; font-size: 10px; font-weight: 700; }
@@ -227,6 +224,9 @@ td b { color: var(--text); font-weight: 600; }
 .modal-backdrop { position: absolute; inset: 0; border: 0; background: rgba(16,24,40,.45); }
 .game-detail-layer { padding: 24px; }
 .game-detail-modal { width: min(980px, calc(100vw - 48px)); max-height: calc(100vh - 48px); position: relative; z-index: 1; display: flex; flex-direction: column; overflow: hidden; border-radius: 12px; background: white; box-shadow: 0 24px 70px rgba(20,31,51,.28); }
+.daily-game-detail-modal { width: min(1180px, calc(100vw - 48px)); }
+.daily-game-detail-modal .game-detail-toolbar { display: flex; justify-content: flex-end; }
+.daily-game-detail-table { min-width: 1060px; }
 .game-detail-head { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 18px 22px; border-bottom: 1px solid var(--line); }
 .game-detail-identity { min-width: 0; display: flex; align-items: center; gap: 13px; }
 .game-detail-avatar { width: 46px; height: 46px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 10px; }

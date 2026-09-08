@@ -5,7 +5,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 type View = "overview" | "users";
 type Vendor = "热游" | "灵仙";
-type GameListMode = "summary" | "detail";
 
 type DetailSortKey = "plays" | "input" | "output" | "net" | "rate";
 type UserSortKey = "plays" | "input" | "output" | "net";
@@ -403,7 +402,6 @@ function UserProfileModal({ user, onClose, closeRef }: { user: UserRow; onClose:
 
 export default function Home() {
   const [view, setView] = useState<View>("overview");
-  const [gameListMode, setGameListMode] = useState<GameListMode>("summary");
   const [region, setRegion] = useState("全部区域");
   const [game, setGame] = useState(vendorAllValue("热游"));
   const [userRegion, setUserRegion] = useState("全部区域");
@@ -419,28 +417,30 @@ export default function Home() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [toast, setToast] = useState("");
   const [detailGame, setDetailGame] = useState<GameRow | null>(null);
+  const [dailyDetailGame, setDailyDetailGame] = useState<GameRow | null>(null);
   const [detailSortKey, setDetailSortKey] = useState<DetailSortKey>("input");
   const [detailSortOrder, setDetailSortOrder] = useState<"desc" | "asc">("desc");
   const [detailPage, setDetailPage] = useState(1);
   const [profileUser, setProfileUser] = useState<UserRow | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const detailCloseRef = useRef<HTMLButtonElement | null>(null);
+  const dailyDetailCloseRef = useRef<HTMLButtonElement | null>(null);
   const profileCloseRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
-    if (!detailGame) return;
+    if (!detailGame && !dailyDetailGame) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    requestAnimationFrame(() => detailCloseRef.current?.focus());
+    requestAnimationFrame(() => (detailGame ? detailCloseRef : dailyDetailCloseRef).current?.focus());
     function closeOnEscape(event: KeyboardEvent) {
-      if (event.key === "Escape") setDetailGame(null);
+      if (event.key === "Escape") { setDetailGame(null); setDailyDetailGame(null); }
     }
     document.addEventListener("keydown", closeOnEscape);
     return () => {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", closeOnEscape);
     };
-  }, [detailGame]);
+  }, [detailGame, dailyDetailGame]);
 
   useEffect(() => {
     if (!profileUser) return;
@@ -471,7 +471,6 @@ export default function Home() {
   const filteredGames = useMemo(() => games.filter((row) =>
     (region === "全部区域" || row.region === region) && gameFilterMatches(row.game, game)
   ), [region, game]);
-  const dailyGames = useMemo(() => buildDailyGameRows(filteredGames), [filteredGames]);
 
   const filteredUsers = useMemo<UserGameRow[]>(() => {
     const keyword = appliedUser.keyword.trim().toLowerCase();
@@ -490,9 +489,10 @@ export default function Home() {
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
   const visibleUsers = filteredUsers.slice((page - 1) * pageSize, page * pageSize);
   const visiblePageItems = useMemo(() => getPaginationItems(page, totalPages), [page, totalPages]);
+  const dailyDetailRows = useMemo(() => dailyDetailGame ? buildDailyGameRows([dailyDetailGame]) : [], [dailyDetailGame]);
   const dailyPageSize = 8;
-  const dailyTotalPages = Math.max(1, Math.ceil(dailyGames.length / dailyPageSize));
-  const visibleDailyGames = dailyGames.slice((dailyPage - 1) * dailyPageSize, dailyPage * dailyPageSize);
+  const dailyTotalPages = Math.max(1, Math.ceil(dailyDetailRows.length / dailyPageSize));
+  const visibleDailyGames = dailyDetailRows.slice((dailyPage - 1) * dailyPageSize, dailyPage * dailyPageSize);
   const dailyPageItems = useMemo(() => getPaginationItems(dailyPage, dailyTotalPages), [dailyPage, dailyTotalPages]);
   const detailRankings = useMemo(() => {
     if (!detailGame) return [];
@@ -513,10 +513,8 @@ export default function Home() {
   }, [detailRankings]);
   const detailGameMeta = detailGame ? gameCatalog[detailGame.game] : undefined;
   const DetailGameIcon = detailGameMeta?.icon ?? GameControllerIcon;
-
-  useEffect(() => {
-    setDailyPage(1);
-  }, [region, game]);
+  const dailyDetailGameMeta = dailyDetailGame ? gameCatalog[dailyDetailGame.game] : undefined;
+  const DailyDetailGameIcon = dailyDetailGameMeta?.icon ?? GameControllerIcon;
 
   useEffect(() => {
     setDailyPage((current) => Math.min(current, dailyTotalPages));
@@ -546,7 +544,7 @@ export default function Home() {
   }
 
   function resetOverview() {
-    setRegion("全部区域"); setGame(vendorAllValue("热游")); setDailyPage(1); notify("筛选条件已重置");
+    setRegion("全部区域"); setGame(vendorAllValue("热游")); notify("筛选条件已重置");
   }
 
   function resetUsers() {
@@ -559,6 +557,11 @@ export default function Home() {
     setDetailSortOrder("desc");
     setDetailPage(1);
     setDetailGame(gameRow);
+  }
+
+  function openDailyGameDetails(gameRow: GameRow) {
+    setDailyPage(1);
+    setDailyDetailGame(gameRow);
   }
 
   async function toggleFullscreen() {
@@ -613,27 +616,7 @@ export default function Home() {
                 <MetricCard mark="返" title="返奖率" value="91.01%" note="用户出奖 ÷ 用户投入 × 100%" tone="green" />
               </section>
 
-              <section className="panel table-panel">
-                <div className="table-heading game-list-heading">
-                  <div className="table-heading-copy"><h2>游戏汇总数据</h2><span>{gameListMode === "summary" ? "悬浮问号查看游戏资料，点击“用户明细”查看该游戏的用户排行" : "按日期、区域与游戏展示每日统计数据。"}</span></div>
-                  <div className="game-list-tabs" role="tablist" aria-label="游戏数据列表类型">
-                    <button type="button" role="tab" aria-selected={gameListMode === "summary"} className={gameListMode === "summary" ? "active" : ""} onClick={() => setGameListMode("summary")}>游戏汇总列表</button>
-                    <button type="button" role="tab" aria-selected={gameListMode === "detail"} className={gameListMode === "detail" ? "active" : ""} onClick={() => { setGameListMode("detail"); setDailyPage(1); }}>明细列表</button>
-                  </div>
-                </div>
-
-                {gameListMode === "summary" ? (
-                  <>
-                    <div className="table-wrap game-table-wrap"><table><thead><tr><th>游戏</th><th>区域</th><th>活跃用户</th><th>游戏次数</th><th>用户投入</th><th>用户出奖</th><th>盈亏</th><th>返奖率</th><th>操作</th></tr></thead><tbody>{loading ? <tr><td colSpan={9}><div className="loading-state"><span />正在加载报表数据…</div></td></tr> : filteredGames.length ? filteredGames.slice(0, 4).map((row) => <tr key={`${row.region}-${row.game}`}><td><GameCell name={row.game} /></td><td>{row.region}</td><td>{format.format(row.active)}</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{profitLoss(row.net)}</td><td>{row.rate.toFixed(2)}%</td><td><button type="button" className="row-action" onClick={() => openGameDetails(row)}>用户明细</button></td></tr>) : <tr><td colSpan={9}><div className="empty-state"><b>未找到匹配数据</b><span>请调整区域、游戏或用户筛选条件后重试。</span><button type="button" onClick={resetOverview}>清除筛选</button></div></td></tr>}</tbody></table></div>
-                    <div className="pagination"><span>共 {filteredGames.length} 条 ｜ 20 条/页</span><button className="active" type="button">1</button><button type="button" disabled>2</button></div>
-                  </>
-                ) : (
-                  <>
-                    <div className="table-wrap game-table-wrap"><table><thead><tr><th>日期</th><th>游戏</th><th>区域</th><th>活跃用户</th><th>游戏次数</th><th>用户投入</th><th>用户出奖</th><th>盈亏</th><th>返奖率</th><th>操作</th></tr></thead><tbody>{loading ? <tr><td colSpan={10}><div className="loading-state"><span />正在加载报表数据…</div></td></tr> : visibleDailyGames.length ? visibleDailyGames.map((row) => <tr key={`${row.date}-${row.region}-${row.game}`}><td>{row.date}</td><td><GameCell name={row.game} /></td><td>{row.region}</td><td>{format.format(row.active)}</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{profitLoss(row.net)}</td><td>{row.rate.toFixed(2)}%</td><td><button type="button" className="row-action" onClick={() => openGameDetails(row)}>用户明细</button></td></tr>) : <tr><td colSpan={10}><div className="empty-state"><b>未找到匹配数据</b><span>请调整区域或游戏条件后重试。</span><button type="button" onClick={resetOverview}>清除筛选</button></div></td></tr>}</tbody></table></div>
-                    <div className="table-footer"><span>明细按日期、区域与游戏拆分；统计范围内每个游戏-区域组合每天生成一条数据。</span><div className="pagination"><span>共 {dailyGames.length} 条 ｜ {dailyPageSize} 条/页</span>{dailyPageItems.map((item, index) => item === "ellipsis" ? <span className="pagination-ellipsis" key={`daily-ellipsis-${index}`} aria-hidden="true">…</span> : <button key={item} type="button" className={dailyPage === item ? "active" : ""} onClick={() => setDailyPage(item)}>{item}</button>)}</div></div>
-                  </>
-                )}
-              </section>
+              <section className="panel table-panel"><div className="table-heading"><div><h2>游戏汇总数据</h2><span>悬浮问号查看游戏资料；可查看该游戏的用户排行或每日游戏明细。</span></div></div><div className="table-wrap game-table-wrap"><table><thead><tr><th>游戏</th><th>区域</th><th>活跃用户</th><th>游戏次数</th><th>用户投入</th><th>用户出奖</th><th>盈亏</th><th>返奖率</th><th>操作</th></tr></thead><tbody>{loading ? <tr><td colSpan={9}><div className="loading-state"><span />正在加载报表数据…</div></td></tr> : filteredGames.length ? filteredGames.slice(0, 4).map((row) => <tr key={`${row.region}-${row.game}`}><td><GameCell name={row.game} /></td><td>{row.region}</td><td>{format.format(row.active)}</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{profitLoss(row.net)}</td><td>{row.rate.toFixed(2)}%</td><td><div className="row-actions"><button type="button" className="row-action" onClick={() => openGameDetails(row)}>用户明细</button><button type="button" className="row-action secondary" onClick={() => openDailyGameDetails(row)}>每日游戏明细</button></div></td></tr>) : <tr><td colSpan={9}><div className="empty-state"><b>未找到匹配数据</b><span>请调整区域、游戏或用户筛选条件后重试。</span><button type="button" onClick={resetOverview}>清除筛选</button></div></td></tr>}</tbody></table></div><div className="pagination"><span>共 {filteredGames.length} 条 ｜ 20 条/页</span><button className="active" type="button">1</button><button type="button" disabled>2</button></div></section>
             </>
           ) : (
             <>
@@ -701,6 +684,26 @@ export default function Home() {
             </div>
 
             <footer className="game-detail-footer"><span>盈亏 = 用户投入 - 用户出奖；返奖率 = 用户出奖 ÷ 用户投入 × 100%。</span><div className="game-detail-footer-actions"><div className="pagination detail-pagination"><span>共 {detailRankings.length} 条 ｜ {detailPageSize} 条/页</span>{Array.from({ length: detailTotalPages }, (_, index) => <button key={index + 1} type="button" className={detailPage === index + 1 ? "active" : ""} onClick={() => setDetailPage(index + 1)}>{index + 1}</button>)}</div><button type="button" onClick={() => setDetailGame(null)}>关闭</button></div></footer>
+          </section>
+        </div>
+      )}
+
+      {dailyDetailGame && dailyDetailGameMeta && (
+        <div className="modal-layer game-detail-layer">
+          <button className="modal-backdrop" type="button" aria-label="关闭每日游戏明细" onClick={() => setDailyDetailGame(null)} />
+          <section className="game-detail-modal daily-game-detail-modal" role="dialog" aria-modal="true" aria-labelledby="daily-game-detail-title" aria-describedby="daily-game-detail-scope">
+            <header className="game-detail-head">
+              <div className="game-detail-identity">
+                <span className="game-detail-avatar" style={{ color: dailyDetailGameMeta.color, background: `${dailyDetailGameMeta.color}18` }}><DailyDetailGameIcon size={28} weight="duotone" aria-hidden="true" /></span>
+                <div><h2 id="daily-game-detail-title">{dailyDetailGame.game} 每日游戏明细</h2><p>{dailyDetailGameMeta.id} · {dailyDetailGameMeta.vendor} · {dailyDetailGame.region}</p></div>
+              </div>
+              <button ref={dailyDetailCloseRef} type="button" className="game-detail-close" aria-label="关闭每日游戏明细" onClick={() => setDailyDetailGame(null)}><XIcon size={18} weight="bold" aria-hidden="true" /></button>
+            </header>
+            <div className="game-detail-toolbar"><div className="game-detail-scope" id="daily-game-detail-scope"><span>统计日期：2026-07-01 至 2026-07-17</span><small>按日展示当前游戏在当前区域的统计数据</small></div></div>
+            <div className="game-detail-table-wrap">
+              <table className="game-detail-table daily-game-detail-table"><thead><tr><th>日期</th><th>游戏</th><th>区域</th><th>活跃用户</th><th>游戏次数</th><th>用户投入</th><th>用户出奖</th><th>盈亏</th><th>返奖率</th></tr></thead><tbody>{visibleDailyGames.map((row) => <tr key={row.date}><td>{row.date}</td><td><GameCell name={row.game} /></td><td>{row.region}</td><td>{format.format(row.active)}</td><td>{format.format(row.plays)}</td><td>{money(row.input)}</td><td>{money(row.output)}</td><td>{profitLoss(row.net)}</td><td className={row.rate >= 95 ? "rate-good" : ""}>{row.rate.toFixed(2)}%</td></tr>)}</tbody></table>
+            </div>
+            <footer className="game-detail-footer"><span>每日明细按日期、区域与游戏拆分；每个日期对应一条数据。</span><div className="game-detail-footer-actions"><div className="pagination detail-pagination"><span>共 {dailyDetailRows.length} 条 ｜ {dailyPageSize} 条/页</span>{dailyPageItems.map((item, index) => item === "ellipsis" ? <span className="pagination-ellipsis" key={`daily-detail-ellipsis-${index}`} aria-hidden="true">…</span> : <button key={item} type="button" className={dailyPage === item ? "active" : ""} onClick={() => setDailyPage(item)}>{item}</button>)}</div><button type="button" onClick={() => setDailyDetailGame(null)}>关闭</button></div></footer>
           </section>
         </div>
       )}
